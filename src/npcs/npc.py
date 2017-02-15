@@ -7,38 +7,41 @@ special NPCs will be possible through passing 0 for the rand_range.
 Core Stats
 ----------
 HP  - Hit Points
-DEF - Physical Defence
 ATK - Base Physical Attack Power
+DEF - Base Physical Defence
 INT - Natural Intellegence
 KNW - Aquired Knowledge
-CHR - Charm
-WLK - Walking Speed
-CAP - Carrying Capacity
-VIS - Vision Distance
+OBS - Observation
 BRV - Bravery
 SAN - Sanity
+CHR - Charm
+CAP - Carrying Capacity
 '''
-from random import randint
+from random import random
 
-CORE_STATS = 'HP DEF ATK INT KNW CHR WLK CAR VIS BRV SAN'.split()
-DEFAULT_STATS = dict(zip(CORE_STATS, (50 for _ in range(len(CORE_STATS)))))
+
+CORE_STATS = 'HP ATK DEF INT KNW OBS BRV SAN CHR CAP'.split()
 
 
 class NPC:
     ''' Base class for all sentient characters. '''
+    CLASS = 'NPC'
+    DEFAULT_STATS = dict(zip(CORE_STATS, (50 for _ in range(len(CORE_STATS)))))
 
-    def __init__(self, core_stats, sym, name, rand_range=50):
+    def __init__(self, sym, name, spread=0.3, stats=None):
         '''
-        core_stats is a dict of the core stats (default values are 50)
-        sym is the symbol that will represent the character
-        name is the in game name for the charater
-        rand_range is the randomisation range for the character.
+        Initialise an NPC by either specifying a full stats dictionary or by
+        giving a spread to randomise with.
         '''
-        core = self.get_core_stats(core_stats, rand_range)
-        self.__dict__.update(core)
-        self.sym = sym
-        self.backpack = []
-        self.equipment = {
+        if not stats:
+            stats = self._randomise_core_stats(spread)
+        self.__dict__.update(stats)
+        self.MAX_HP = self.HP
+        self.SYM = sym
+        self.CLASS = self.__class__.CLASS
+        self.PACK = []
+        self.NAME = name
+        self.EQUIPMENT = {
             'head': None,
             'chest': None,
             'larm': None,
@@ -48,17 +51,15 @@ class NPC:
             'special': []
         }
 
-    @staticmethod
-    def randomise_core_stats(stats, rand_range):
-        '''
-        Randomise the default stats for a character class.
-        Negative values bump up to 0.
-        '''
-        for key in CORE_STATS:
-            if key not in stats:
-                raise KeyError('Missing core stat: %s', key)
+    @property
+    def stats(self):
+        extra = ['NAME', 'SYM', 'CLASS', 'MAX_HP']
+        d = self.__dict__
+        stats = ('{}: {}'.format(stat, d[stat]) for stat in extra + CORE_STATS)
+        return '\n'.join(stats)
 
-        for key in stats:
-            stats[key] += randint(-rand_range, rand_range)
-            stats[key] = 0 if stats[key] < 0 else stats[key]
+    def _randomise_core_stats(self, spread):
+        '''Randomise the default stats for a character class.'''
+        base = self.__class__.DEFAULT_STATS.items()
+        stats = {k: v + int(v * (2 * random() - 1) * spread) for k, v in base}
         return stats
