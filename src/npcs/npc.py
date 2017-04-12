@@ -20,7 +20,12 @@ CAP - Carrying Capacity
 from random import random
 
 
+# All NPCs share the same core stats
 CORE_STATS = 'HP ATK DEF INT KNW OBS BRV SAN CHR CAP'.split()
+
+
+class FailedAttack(Exception):
+    pass
 
 
 class NPC:
@@ -38,28 +43,39 @@ class NPC:
         self.__dict__.update(stats)
         self.MAX_HP = self.HP
         self.SYM = sym
-        self.CLASS = self.__class__.CLASS
         self.PACK = []
         self.NAME = name
+        self._atk_range = 0  # 0/1/2 -> close/medium/long
         self.EQUIPMENT = {
-            'head': None,
-            'chest': None,
-            'larm': None,
-            'rarm': None,
-            'legs': None,
-            'feet': None,
-            'special': []
+            k: None for k in
+            ['head', 'chest', 'larm', 'rarm', 'legs', 'feet', 'special']
         }
 
     @property
     def stats(self):
-        extra = ['NAME', 'SYM', 'CLASS', 'MAX_HP']
+        '''Pretty print this NPCs stats'''
+        extra = ['NAME', 'SYM', 'MAX_HP']
         d = self.__dict__
         stats = ('{}: {}'.format(stat, d[stat]) for stat in extra + CORE_STATS)
-        return '\n'.join(stats)
+        print('CLASS: {}\n'.format(self.CLASS) + '\n'.join(stats))
 
     def _randomise_core_stats(self, spread):
         '''Randomise the default stats for a character class.'''
         base = self.__class__.DEFAULT_STATS.items()
         stats = {k: v + int(v * (2 * random() - 1) * spread) for k, v in base}
         return stats
+
+    def attack(self, target):
+        '''
+        Make a basic attack against another character/object.
+        The target must be inside of the attack range.
+        Attacker's bravery and sanity may affect the target as well.
+        '''
+        if self._target_in_range(target):
+            outcome = target.get_hit(self.ATK, self.BRV, self.SAN)
+            self._process_attack_outcome(outcome)
+        else:
+            raise FailedAttack('Out of range')
+
+    def _target_in_range(self, target):
+        return get_range(self, target) <= self._atk_range
