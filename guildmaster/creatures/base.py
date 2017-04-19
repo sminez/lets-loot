@@ -10,6 +10,8 @@ class Creature(GameObject):
     size = None
     race = None
     type = None
+    name = None
+    alive = True
 
     def __init__(self, STR=1, DEX=1, CON=1, INT=1, WIS=1, CHA=1,
                  AC=1, MAX_HP=1, x=1, y=1, char='@', colour=(0, 0, 0),
@@ -93,7 +95,7 @@ class Creature(GameObject):
         new_x = self.x + dx
         new_y = self.y + dy
         for obj in screen.objects:
-            if obj is not self and obj.x == new_x and obj.y == new_y:
+            if obj.alive and obj.x == new_x and obj.y == new_y:
                 self.basic_attack(obj)
                 break
         else:
@@ -105,7 +107,7 @@ class Creature(GameObject):
         must be set in subclasses.
         '''
         weapon = self.equipment.get('right')
-        mod = weapon.atk_mod if weapon is not None else 0
+        mod = weapon.atk_mod if weapon is not None else 5
         success, crit = self.skill_check('STR', target.AC, mod)
         if success:
             if crit:
@@ -124,10 +126,11 @@ class Creature(GameObject):
         '''Take a hit and check for death'''
         self.HP -= damage
         if self.HP <= 0:
-            self.CONSIOUS = False
-        if self.HP <= -(self.MAX_HP // 2):
             self.die()
 
     def die(self):
         '''Deal with creature death'''
-        raise NotImplementedError
+        print('{} died'.format(self.name))
+        self.char = '%'
+        self.block_move = False
+        self.alive = False

@@ -64,6 +64,8 @@ CLOSED_DOOR = tilemaker("+", fg=DARK2, bg=DARK0, block_move=True,
                         block_sight=True, explored=False)
 OPEN_DOOR = tilemaker("'", fg=DARK2, bg=DARK0, block_move=False,
                       block_sight=False, explored=False)
+SECRET_DOOR = tilemaker("#", fg=DARK4, bg=DARK0, block_move=False,
+                        block_sight=True, explored=False)
 
 # MapGen paramaters
 MIN_ROOM_SIZE = 7
@@ -72,7 +74,12 @@ MAX_ROOMS = 60
 
 # FOV
 # BASIC, DIAMOND, SHADOW, PERMISSIVE, RESTRICTIVE
-FOV_ALG = 'DIAMOND'
-FOV_RADIUS1 = 5
-FOV_RADIUS2 = 8
+FOV_ALG = 'SHADOW'
+FOV_RADIUS1 = 7
+FOV_RADIUS2 = 10
 LIGHT_WALLS = True
+
+
+# Panel config
+BAR_WIDTH = 25
+PANEL_HEIGHT = 8
