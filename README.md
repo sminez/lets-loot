@@ -20,3 +20,9 @@ usually better to get some more...expendible associates to do that for you.
 
 From lowly beginings raise yourself up to the dissy heights of meagerness and
 minor brand recognition as you strive for ever less offputting surroundings.
+
+
+Articles to look at
+-------------------
+http://roguelikedeveloper.blogspot.co.uk/2007/11/unangband-dungeon-generation-part-one.html
+http://www.roguebasin.com/index.php?title=Basic_BSP_Dungeon_generation

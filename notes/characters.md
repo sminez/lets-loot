@@ -40,8 +40,8 @@ Goal: to make fwends with puppers
 - Annoys nearly every other character class
 - Allows for capture and taming of beasts.
 
-Archivist (A)
--------------
+Cartographer (A)
+----------------
 _"37th left and then straight on to the Blue Dining Room"_
 Goal: raching the heart of the archive
 - Criticals on enemies are easier
@@ -87,8 +87,8 @@ Goal: collecting materials
 - Designs and maintains gadgets
 - At higher level they can construct teleporters with a librarian.
 
-Gourmet (G)
------------
+Cook (G)
+--------
 _"You cretinous ham!_
 Goal: collecting ingredients
 - Better food buffs new expeditions.
