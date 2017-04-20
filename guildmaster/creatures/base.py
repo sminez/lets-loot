@@ -39,6 +39,7 @@ class Creature(GameObject):
         self.equipment = {
             'head': None, 'chest': None,
             'main': None, 'offhand': None,
+            'hands': None, 'feet': None,
             'legs': None, 'cloak': None,
             'belt': None, 'necklace': None,
             'ring1': None, 'ring2': None
@@ -174,15 +175,55 @@ class Creature(GameObject):
             return [msg]
         else:
             if self.player_character:
-                if self.HP / self.MAX_HP > 0.75:
-                    self.colour = LIGHT0
-                elif self.HP / self.MAX_HP > 0.50:
-                    self.colour = BRIGHT_YELLOW
-                elif self.HP / self.MAX_HP > 0.35:
-                    self.colour = BRIGHT_ORANGE
-                elif self.HP / self.MAX_HP > 0.20:
-                    self.colour = BRIGHT_RED
+                self.set_colour()
         return []
+
+    def set_colour(self):
+        '''Set the player colour based on health'''
+        if self.HP / self.MAX_HP >= 0.75:
+            self.colour = LIGHT0
+        elif self.HP / self.MAX_HP >= 0.50:
+            self.colour = BRIGHT_YELLOW
+        elif self.HP / self.MAX_HP >= 0.25:
+            self.colour = BRIGHT_ORANGE
+        elif self.HP / self.MAX_HP < 0.25:
+            self.colour = BRIGHT_RED
+
+    def rest(self):
+        '''Recover HP and SP from resting'''
+        hp = roll(self.PC_class.hit_dice) // 2
+        messages = self.heal(hp)
+
+        if self.MAX_SP > 0:
+            sp_messages = self.recover_sp(1)
+            messages.extend(sp_messages)
+
+        return messages
+
+    def heal(self, amount):
+        '''heal up to self.MAX_HP'''
+        self.HP += amount
+
+        if self.HP > self.MAX_HP:
+            self.HP = self.MAX_HP
+
+        if self.player_character:
+            self.set_colour()
+
+        msg = Message('{} recovered {} hit points'.format(self.name, amount),
+                      LIGHT0)
+        return [msg]
+
+    def recover_sp(self, amount):
+        '''recover spell points up to MAX_SP'''
+        self.SP += amount
+
+        if self.SP > self.MAX_SP:
+            self.SP = self.MAX_SP
+
+        msg = Message('{} recovered {} spell points'.format(self.name, amount),
+                      LIGHT0)
+        return [msg]
 
     def die(self):
         '''Deal with creature death'''

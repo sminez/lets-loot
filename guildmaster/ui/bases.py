@@ -194,6 +194,12 @@ class Screen:
             if item is not None:
                 messages = self.player.use_item(item)
 
+        # Actions
+        elif keypress.keychar == 'r' and keypress.shift:
+            # R to rest
+            tick = True
+            messages = self.player.rest()
+
         # Game control
         elif keypress.key == 'ENTER' and keypress.alt:
             # Alt+Enter == toggle fullscreen
