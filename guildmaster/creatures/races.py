@@ -18,7 +18,7 @@ class Human(Creature):
 
         # Humans get +1 to all abilities
         for ability in abilities:
-            if ability != 'MAX_HP':
+            if ability not in ['MAX_HP', 'MAX_SP']:
                 abilities[ability] += 1
 
         super().__init__(x=x, y=y, char=char, colour=colour,

@@ -83,3 +83,6 @@ LIGHT_WALLS = True
 # Panel config
 BAR_WIDTH = 20
 PANEL_HEIGHT = 8
+
+# Character config
+LEVEL_UP_XP_MULTIPLIER = 1.2

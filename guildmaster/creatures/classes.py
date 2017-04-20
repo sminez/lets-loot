@@ -2,7 +2,7 @@
 Classes for PCs and NPCs
 '''
 from random import randint, choice
-from ..utils import stat_roll
+from ..utils import stat_roll, roll
 from ..items.armour_light import Padded, Leather, StuddedLeather
 from ..items.martial_melee import ShortSword, LongSword, Axe
 from collections import namedtuple
@@ -35,7 +35,9 @@ def search(character):
 class Class:
     class_name = None
     stat_order = ['CON', 'STR', 'DEX', 'WIS', 'INT', 'CHA']
-    hit_die = []
+    hit_dice = []
+    spell_dice = []
+    spell_stat = None
     actions = {}
     skills = []
 
@@ -44,8 +46,14 @@ class Class:
         '''Generate lvl1 ability scores'''
         ranked_scores = sorted(random_ability_scores(), reverse=True)
         ability_scores = dict(zip(cls.stat_order, ranked_scores))
-        ability_scores['MAX_HP'] = (sum(cls.hit_die) +
+        ability_scores['MAX_HP'] = (sum(cls.hit_dice) +
                                     (ability_scores['CON'] - 10) // 2)
+        if cls.spell_stat is not None:
+            ability_scores['MAX_SP'] = (
+                roll(cls.spell_dice) +
+                (ability_scores[cls.spell_stat] - 10) // 2)
+        else:
+            ability_scores['MAX_SP'] = 0
         return ability_scores
 
     @classmethod
@@ -58,7 +66,9 @@ class Adventurer(Class):
     '''A jack of all trades'''
     class_name = 'Adventurer'
     stat_order = ['CON', 'STR', 'DEX', 'WIS', 'INT', 'CHA']
-    hit_die = [10]
+    hit_dice = [10]
+    spell_dice = [4]
+    spell_stat = 'WIS'
     actions = {2: Action('search', 0, search)}
     skills = []
 

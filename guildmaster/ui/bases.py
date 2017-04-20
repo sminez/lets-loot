@@ -6,12 +6,10 @@ import textwrap
 # from ..creatures.base import Creature
 from ..creatures.pcs import new_PC
 from ..dungeon.mapgen import Dungeon
-from ..config import BLACK, DIM_FG1, DIM_FG2, LIGHT0
-from ..config import FOV_ALG, FOV_RADIUS1, FOV_RADIUS2, LIGHT_WALLS
 from ..config import BAR_WIDTH, PANEL_HEIGHT
-from ..config import NEUTRAL_RED, NEUTRAL_YELLOW, NEUTRAL_AQUA, NEUTRAL_GREEN
-from ..config import BRIGHT_RED, BRIGHT_YELLOW, BRIGHT_AQUA, BRIGHT_GREEN
-from ..config import FADED_RED, FADED_YELLOW, FADED_AQUA, FADED_GREEN
+from ..config import BLACK, DIM_FG1, DIM_FG2, LIGHT0, LIGHT4, DARK0
+from ..config import BRIGHT_RED, FADED_RED, BRIGHT_AQUA, FADED_AQUA
+from ..config import FOV_ALG, FOV_RADIUS1, FOV_RADIUS2, LIGHT_WALLS
 
 
 class Screen:
@@ -27,7 +25,7 @@ class Screen:
     '''
     def __init__(self, height=60, width=90, fps=30, panel_height=PANEL_HEIGHT,
                  hp_bar_width=BAR_WIDTH, alt_layout=False,
-                 font='guildmaster/fonts/terminal16x16_gs_ro.png'):
+                 font='guildmaster/fonts/terminal12x12_gs_ro.png'):
         self.width = width
         self.height = height
         self.map_height = height - panel_height
@@ -40,18 +38,14 @@ class Screen:
         self.font = font
         self.alt_layout = alt_layout
 
-        # Initialise Multiple characters
-        self.char1 = new_PC(1, 1, NEUTRAL_RED, 'Red')
-        self.char2 = new_PC(2, 1, NEUTRAL_YELLOW, 'Yellow')
-        self.char3 = new_PC(1, 2, NEUTRAL_AQUA, 'Blue')
-        self.char4 = new_PC(2, 2, NEUTRAL_GREEN, 'Green')
+        # Initialise the player
+        # TODO : character creation screen
+        self.player = new_PC('Player')
+        self.player_and_allies = [self.player]
+        self.objects = [self.player]
 
-        self.objects = [self.char2, self.char3, self.char4, self.char1]
         self.visible_tiles = set()
         self.visible_tiles2 = set()
-
-        # Focus on the first charcter
-        self.current_char = self.char1
 
         # initialise message queue
         self.messages = []
@@ -88,7 +82,7 @@ class Screen:
         if compute_fov:
             visible_tiles = set()
             visible_tiles2 = set()
-            for char in [self.char1, self.char2, self.char3, self.char4]:
+            for char in self.player_and_allies:
                 if char.alive:
                     visible_tiles.update(tdl.map.quickFOV(
                         char.x, char.y, visible_tile, fov=FOV_ALG,
@@ -133,10 +127,7 @@ class Screen:
         self.dungeon = Dungeon(height=self.map_height, width=self.width)
         self.current_map = self.dungeon[0]
         x, y = self.current_map.rooms[0].center
-        self.char1.x, self.char1.y = x, y
-        self.char2.x, self.char2.y = x+1, y
-        self.char3.x, self.char3.y = x, y+1
-        self.char4.x, self.char4.y = x+1, y+1
+        self.player.x, self.player.y = x, y
 
         compute_fov = True
 
@@ -152,8 +143,7 @@ class Screen:
 
             # Blit the panel
             self.panel.render_bg()
-            self.panel.render_hp(
-                self.char1, self.char2, self.char3, self.char4)
+            self.panel.render_stats(self.player)
 
             self.panel.render_messages(self.messages)
 
@@ -168,10 +158,11 @@ class Screen:
 
             compute_fov, should_exit, tick = self.handle_keys(self)
 
-            # if tick:
-            #     for obj in self.objects:
-            #         if obj is not self.current_char:
-            #             obj.action()
+            if tick:
+                for obj in self.objects:
+                    if obj is not self.player:
+                        obj.action()
+
             if should_exit:
                 break
 
@@ -189,43 +180,35 @@ class Screen:
             compute_fov = tick = True
 
         if keypress.key == 'UP':
-            messages = self.current_char.move_or_melee(0, -1, lmap)
+            messages = self.player.move_or_melee(0, -1, lmap)
         elif keypress.key == 'DOWN':
-            messages = self.current_char.move_or_melee(0, 1, lmap)
+            messages = self.player.move_or_melee(0, 1, lmap)
         elif keypress.key == 'LEFT':
-            messages = self.current_char.move_or_melee(-1, 0, lmap)
+            messages = self.player.move_or_melee(-1, 0, lmap)
         elif keypress.key == 'RIGHT':
-            messages = self.current_char.move_or_melee(1, 0, lmap)
-        # Character switch
-        elif keypress.key == '1':
-            self.focus_character(self.char1)
-        elif keypress.key == '2':
-            self.focus_character(self.char2)
-        elif keypress.key == '3':
-            self.focus_character(self.char3)
-        elif keypress.key == '4':
-            self.focus_character(self.char4)
+            messages = self.player.move_or_melee(1, 0, lmap)
+
+        # Menus
+        elif keypress.keychar == 'i':
+            item = self.menu_selection('Inventory', 40, 40, self.player.pack)
+            if item is not None:
+                messages = self.player.use_item(item)
+
         # Game control
         elif keypress.key == 'ENTER' and keypress.alt:
             # Alt+Enter == toggle fullscreen
             tdl.set_fullscreen(True)
-        elif keypress.key == 'ESCAPE':
-            return compute_fov, True, tick
+        elif keypress.key == 'ESCAPE' and keypress.alt:
+            should_exit = self.menu_selection(
+                'Really quit?', 20, 10, ['yes', 'no'], ['y', 'n'])
+            if should_exit == 0:
+                # TODO: implement run saving
+                return compute_fov, True, tick
 
         for message in messages:
             self.add_message(message)
 
         return compute_fov, False, tick
-
-    def focus_character(self, character):
-        '''
-        Switch control to the selected character and make sure that they
-        are rendered on top of everything else
-        '''
-        if character.alive:
-            self.current_char = character
-            self.send_obj_to_front(character)
-            # TODO: set AI on other characters
 
     def add_message(self, message):
         '''Add a new message to the message buffer'''
@@ -236,6 +219,82 @@ class Screen:
             if len(self.messages) == self.panel_height - 1:
                 self.messages.pop(0)
             self.messages.append((line, message.colour))
+
+    def menu_selection(self, title, width, height, options, keys=None):
+        '''Render a menu and return a selected index from options'''
+        def chunked(l):
+            return [l[i:i+26] for i in range(0, len(l), 26)]
+
+        # Keep here for quicker debugging in dynamic use
+        if keys is not None and len(keys) != len(options):
+            raise IndexError('incorrect number of keys given for options')
+
+        title = textwrap.wrap('.: ' + title + ' :.', width)
+        chunked_options = chunked(options)
+
+        window = tdl.Console(width, height)
+        window.draw_rect(0, 0, width, height, None, fg=LIGHT0, bg=DARK0)
+        for i, line in enumerate(title):
+            window.draw_str(0, 0+i, title[i], bg=None)
+
+        block_index = 0
+
+        while True:
+            y = len(title)
+            if keys is None:
+                ix = ord('a')
+                if len(chunked_options) > 0:
+                    for option in chunked_options[block_index]:
+                        text = '[' + chr(ix) + '] ' + option
+                        window.draw_str(0, y, text, bg=None)
+                        y += 1
+                        ix += 1
+            else:
+                for key, option in zip(keys, options):
+                    text = '[' + key + '] ' + option
+                    window.draw_str(0, y, text, bg=None)
+                    y += 1
+
+            x = self.width // 2 - width // 2
+            y = self.height // 2 - height // 2
+            self.root.blit(window, x, y, width, height, 0, 0)
+            tdl.flush()
+
+            # NOTE: The menu activation keystroke seems to hang around
+            # Catch it here to avoid it acting as the selection.
+            tdl.event.key_wait()
+
+            # Read the player input
+            key = tdl.event.key_wait()
+
+            # Backspace to exit without making a choice
+            if key.char == '\x08':
+                return
+            # Toggle pages with [, ]
+            elif key.char == '[':
+                if block_index != 0:
+                    block_index -= 1
+            elif key.char == ']':
+                if block_index != len(chunked_options):
+                    block_index += 1
+            # Try to use the character as a selection
+            else:
+                # XXX:  Some keys return CHAR and some return TEXT...!
+                # NOTE: ord(a) == 97 and it is our offset to convert
+                #       back to a list index
+                key = key.char if key.key == 'CHAR' else key.text
+                try:
+                    selected_index = ord(key) - 97
+                except TypeError:
+                    # Modifier key
+                    continue
+
+                if keys is None:
+                    if 0 <= selected_index <= len(options):
+                        return selected_index + block_index * 26
+                else:
+                    if key in keys:
+                        return keys.index(key)
 
 
 class Panel:
@@ -268,18 +327,16 @@ class Panel:
 
         self.panel.draw_str(text_x, y, text, fg=LIGHT0, bg=None)
 
-    def render_hp(self, c1, c2, c3, c4):
-        title = '.: Party :.'
+    def render_stats(self, player):
+        title = '.: {} :.'.format(player.name)
         text_x = 1 + (self.hp_bar_width - len(title)) // 2
         self.panel.draw_str(text_x, 1, title, bg=DIM_FG2, fg=LIGHT0)
         self.render_bar(
-            1, 2, 'HP', c1.HP, c1.MAX_HP, BRIGHT_RED, FADED_RED)
+            1, 2, 'HP', player.HP, player.MAX_HP, BRIGHT_RED, FADED_RED)
         self.render_bar(
-            1, 3, 'HP', c2.HP, c2.MAX_HP, BRIGHT_YELLOW, FADED_YELLOW)
+            1, 3, 'SP', player.SP, player.MAX_SP, BRIGHT_AQUA, FADED_AQUA)
         self.render_bar(
-            1, 4, 'HP', c3.HP, c3.MAX_HP, BRIGHT_AQUA, FADED_AQUA)
-        self.render_bar(
-            1, 5, 'HP', c4.HP, c4.MAX_HP, BRIGHT_GREEN, FADED_GREEN)
+            1, 4, 'XP', player.current_xp, player.next_level, LIGHT0, LIGHT4)
 
     def render_messages(self, messages):
         '''Display the current messages'''
