@@ -12,7 +12,7 @@ from ..config import BRIGHT_RED, FADED_RED, BRIGHT_AQUA, FADED_AQUA
 from ..config import FOV_ALG, FOV_RADIUS1, FOV_RADIUS2, LIGHT_WALLS
 
 
-class Screen:
+class GameScreen:
     '''
     Control class that handles setting tdl config options
     and manages the overall UI
@@ -25,7 +25,7 @@ class Screen:
     '''
     def __init__(self, height=60, width=90, fps=30, panel_height=PANEL_HEIGHT,
                  hp_bar_width=BAR_WIDTH, alt_layout=False,
-                 font='guildmaster/fonts/terminal12x12_gs_ro.png'):
+                 font='guildmaster/fonts/terminal16x16_gs_ro.png'):
         self.width = width
         self.height = height
         self.map_height = height - panel_height
@@ -49,6 +49,34 @@ class Screen:
 
         # initialise message queue
         self.messages = []
+
+        tdl.set_font(self.font, greyscale=True, altLayout=self.alt_layout)
+        tdl.event.set_key_repeat(delay=500, interval=50)
+        self.root = tdl.init(self.width, self.height,
+                             title="GuildMaster", fullscreen=False)
+        self.con = tdl.Console(self.width, self.map_height)
+        self.panel = Panel(self.width, self.panel_height, self.hp_bar_width)
+        tdl.set_fps(self.fps)
+
+    def main_menu(self):
+        '''Main menu for starting / loading games'''
+        while True:
+            choice = self.menu_selection(
+                'Guild Master', 30, 30,
+                ['New', 'Continue', 'Quit'], ['n', 'c', 'q'], bg=None)
+
+            if choice == 0:
+                # self.new_game()
+                self.run()
+            if choice == 1:
+                try:
+                    self.load_game()
+                except:
+                    self.msgbox('\n No saved game to load.\n', 24)
+                    continue
+                self.run()
+            elif choice == 2:
+                break
 
     def render_object(self, obj):
         '''Render an object to the console'''
@@ -117,12 +145,6 @@ class Screen:
         '''
         Main rendering loop: calls handle_keys
         '''
-        tdl.set_font(self.font, greyscale=True, altLayout=self.alt_layout)
-        self.root = tdl.init(self.width, self.height,
-                             title="GuildMaster", fullscreen=False)
-        self.con = tdl.Console(self.width, self.map_height)
-        self.panel = Panel(self.width, self.panel_height, self.hp_bar_width)
-        tdl.set_fps(self.fps)
 
         self.dungeon = Dungeon(height=self.map_height, width=self.width)
         self.current_map = self.dungeon[0]
@@ -202,13 +224,13 @@ class Screen:
 
         # Game control
         elif keypress.key == 'ENTER' and keypress.alt:
-            # Alt+Enter == toggle fullscreen
             tdl.set_fullscreen(True)
-        elif keypress.key == 'ESCAPE' and keypress.alt:
+        elif keypress.keychar == 'q' and keypress.shift:
             should_exit = self.menu_selection(
                 'Really quit?', 20, 10, ['yes', 'no'], ['y', 'n'])
             if should_exit == 0:
                 # TODO: implement run saving
+                self.root.clear()
                 return compute_fov, True, tick
 
         for message in messages:
@@ -226,7 +248,22 @@ class Screen:
                 self.messages.pop(0)
             self.messages.append((line, message.colour))
 
-    def menu_selection(self, title, width, height, options, keys=None):
+    def msgbox(self, text, width=50, height=50):
+        '''Display a message'''
+        text = textwrap.wrap(text, width)
+        window = tdl.Console(width, height)
+        window.draw_rect(0, 0, width, height, None, fg=LIGHT0, bg=DARK0)
+        for i, line in enumerate(text):
+            window.draw_str(0, 0+i, text[i], bg=None)
+
+        x = self.width // 2 - width // 2
+        y = self.height // 2 - height // 2
+        self.root.blit(window, x, y, width, height, 0, 0)
+        tdl.flush()
+        tdl.event.key_wait()
+
+    def menu_selection(self, title, width, height, options, keys=None,
+                       bg=DARK0):
         '''Render a menu and return a selected index from options'''
         def chunked(l):
             return [l[i:i+26] for i in range(0, len(l), 26)]
@@ -239,14 +276,15 @@ class Screen:
         chunked_options = chunked(options)
 
         window = tdl.Console(width, height)
-        window.draw_rect(0, 0, width, height, None, fg=LIGHT0, bg=DARK0)
+        if bg is not None:
+            window.draw_rect(0, 0, width, height, None, fg=LIGHT0, bg=bg)
         for i, line in enumerate(title):
             window.draw_str(0, 0+i, title[i], bg=None)
 
         block_index = 0
 
         while True:
-            y = len(title)
+            y = len(title) + 1
             if keys is None:
                 ix = ord('a')
                 if len(chunked_options) > 0:

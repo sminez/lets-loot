@@ -1,6 +1,6 @@
-from guildmaster.ui.bases import Screen
+from guildmaster.ui.bases import GameScreen
 
 
 if __name__ == '__main__':
-    s = Screen()
-    s.run()
+    s = GameScreen()
+    s.main_menu()

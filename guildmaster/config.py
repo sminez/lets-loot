@@ -1,9 +1,6 @@
 '''
 Global config options
 '''
-from .utils import tilemaker
-
-
 # Colours
 # Taken from https://github.com/morhetz/gruvbox-contrib/blob/master/color.table
 BLACK = (0, 0, 0)
@@ -50,22 +47,6 @@ FADED_ORANGE = (175, 58, 3)
 # Named colours
 DIM_FG1 = (25, 25, 25)
 DIM_FG2 = (32, 32, 32)
-
-# Tiles
-ROCK = tilemaker("#", fg=DARK4, bg=DARK0, block_move=True,
-                 block_sight=True, explored=False)
-FLOOR = tilemaker(".", fg=DARK1, bg=DARK0, block_move=False,
-                  block_sight=False, explored=False)
-UP = tilemaker(">", fg=WHITE, bg=DARK0, block_move=False,
-               block_sight=False, explored=False)
-DOWN = tilemaker("<", fg=WHITE, bg=DARK0, block_move=False,
-                 block_sight=False, explored=False)
-CLOSED_DOOR = tilemaker("+", fg=DARK2, bg=DARK0, block_move=True,
-                        block_sight=True, explored=False)
-OPEN_DOOR = tilemaker("'", fg=DARK2, bg=DARK0, block_move=False,
-                      block_sight=False, explored=False)
-SECRET_DOOR = tilemaker("#", fg=DARK4, bg=DARK0, block_move=False,
-                        block_sight=True, explored=False)
 
 # MapGen paramaters
 MIN_ROOM_SIZE = 7

@@ -2,9 +2,8 @@
 Map creation algorithms
 '''
 from random import randint
-from ..utils import GameObject
+from ..utils import GameObject, Tile
 from ..config import MIN_ROOM_SIZE, MAX_ROOM_SIZE, MAX_ROOMS
-from ..config import ROCK, FLOOR, OPEN_DOOR, CLOSED_DOOR, UP, DOWN
 
 
 class Room(GameObject):
@@ -81,6 +80,7 @@ class Dungeon:
         # Connect the rooms and add some noise
         new_map.connect()
         new_map.add_dead_ends()
+        new_map.add_doors()
 
         # Populate with features
         new_map.add_features()
@@ -94,7 +94,9 @@ class Map:
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.lmap = [[ROCK() for x in range(width)] for y in range(height)]
+        self.lmap = [
+            [Tile('rock') for x in range(width)]
+            for y in range(height)]
         self.rooms = []
         self.centers = {}
         self.starting_x = 0
@@ -104,12 +106,12 @@ class Map:
         '''Add a new, non-overlapping room to the map'''
         for x in range(room.x1+1, room.x2):
             for y in range(room.y1+1, room.y2):
-                self.lmap[y][x] = FLOOR()
+                self.lmap[y][x] = Tile('floor')
 
         if len(self.rooms) == 0:
             # First room is the entry point
             self.starting_x, self.starting_y = room.random_point()
-            self.lmap[self.starting_y][self.starting_x] = UP()
+            self.lmap[self.starting_y][self.starting_x] = Tile('up')
         else:
             pass
 
@@ -118,12 +120,12 @@ class Map:
     def h_corridor(self, x1, x2, y):
         '''Draw a corridor from x1 to x2 and y'''
         for x in range(min(x1, x2), max(x1, x2)+1):
-            self.lmap[y][x] = FLOOR()
+            self.lmap[y][x] = Tile('floor')
 
     def v_corridor(self, y1, y2, x):
         '''Draw a corridor from y1 to y2 at x'''
         for y in range(min(y1, y2), max(y1, y2)+1):
-            self.lmap[y][x] = FLOOR()
+            self.lmap[y][x] = Tile('floor')
 
     def connect(self):
         '''Ensure that all rooms can be reached'''
@@ -147,6 +149,30 @@ class Map:
                 self.v_corridor(y1, ydiv, x1)
                 self.v_corridor(y2, ydiv, x2)
                 self.h_corridor(x1, x2, ydiv)
+
+    def add_doors(self):
+        '''
+        Try to add some doors to the dungeon
+        This currently causes far too many doors to be added!
+        '''
+        for room in self.rooms:
+            for cell in self.lmap[room.y1][room.x1:room.x2]:
+                if cell.name == 'floor':
+                    cell.closed_door()
+
+            for cell in self.lmap[room.y2][room.x1:room.x2]:
+                if cell.name == 'floor':
+                    cell.closed_door()
+
+            for row in self.lmap[room.y1:room.y2]:
+                cell = row[room.x1]
+                if cell.name == 'floor':
+                    cell.closed_door()
+
+            for row in self.lmap[room.y1:room.y2]:
+                cell = row[room.x2]
+                if cell.name == 'floor':
+                    cell.closed_door()
 
     def add_dead_ends(self):
         pass

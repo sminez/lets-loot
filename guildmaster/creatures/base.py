@@ -191,12 +191,20 @@ class Creature(GameObject):
 
     def rest(self):
         '''Recover HP and SP from resting'''
-        hp = roll(self.PC_class.hit_dice) // 2
-        messages = self.heal(hp)
+        if self.HP < self.MAX_HP:
+            hp = roll(self.PC_class.hit_dice) // 2
+            messages = self.heal(hp)
+        else:
+            messages = []
 
-        if self.MAX_SP > 0:
+        if self.MAX_SP > 0 and (self.SP < self.MAX_SP):
             sp_messages = self.recover_sp(1)
             messages.extend(sp_messages)
+
+        if len(messages) == 0:
+            # Already max HP and SP
+            msg = Message('You already feel well rested', LIGHT0)
+            messages.append(msg)
 
         return messages
 

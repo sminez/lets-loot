@@ -1,6 +1,7 @@
 '''
 Basic mechanics for use in other modules
 '''
+from .config import DARK0, DARK2, DARK4, WHITE
 from random import randint
 from collections import namedtuple
 
@@ -11,20 +12,46 @@ Message = namedtuple('Message', 'text colour')
 
 class Tile:
     '''A tile in the dungeon map'''
-    def __init__(self, char, fg, bg, block_move, block_sight, explored):
-        self.char = char
-        self.fg = fg
-        self.bg = bg
-        self.block_move = block_move
-        self.block_sight = block_sight
-        self.explored = explored
+    def __init__(self, name):
+        self.name = name
+        self.explored = False
+        # Initialise the tile settings
+        getattr(self, name)()
 
+    def rock(self):
+        self.char = '#'
+        self.fg, self.bg = DARK4, DARK0
+        self.block_move, self.block_sight = True, True
 
-def tilemaker(char, fg, bg, block_move, block_sight, explored):
-    '''Allow tiles to be created using a new named function'''
-    def new_tile():
-        return Tile(char, fg, bg, block_move, block_sight, explored)
-    return new_tile
+    def floor(self):
+        self.char = '.'
+        self.fg, self.bg = DARK4, DARK0
+        self.block_move, self.block_sight = False, False
+
+    def closed_door(self):
+        self.char = '+'
+        self.fg, self.bg = DARK2, DARK0
+        self.block_move, self.block_sight = True, True
+
+    def open_door(self):
+        self.char = "'"
+        self.fg, self.bg = DARK2, DARK0
+        self.block_move, self.block_sight = False, False
+
+    def secret_door(self):
+        self.char = "#"
+        self.fg, self.bg = DARK4, DARK0
+        self.block_move, self.block_sight = False, True
+
+    def up(self):
+        self.char = "<"
+        self.fg, self.bg = WHITE, DARK0
+        self.block_move, self.block_sight = False, False
+
+    def down(self):
+        self.char = ">"
+        self.fg, self.bg = WHITE, DARK0
+        self.block_move, self.block_sight = False, False
 
 
 class GameObject:
@@ -49,7 +76,13 @@ class GameObject:
         new_x = self.x + dx
         new_y = self.y + dy
 
-        if screen.current_map.lmap[new_y][new_x].block_move:
+        destination = screen.current_map.lmap[new_y][new_x]
+        if destination.block_move:
+            if destination.char == '+':
+                # open the door
+                destination.char = "'"
+                destination.block_move = False
+                destination.block_sight = False
             return
 
         for obj in screen.objects:
