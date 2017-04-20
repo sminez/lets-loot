@@ -1,7 +1,8 @@
 '''
 Base classes and functions for creatures, NPCs and enemies
 '''
-from ..utils import roll, SkillCheckResult, GameObject
+from ..config import LIGHT0, BRIGHT_RED, FADED_RED
+from ..utils import roll, SkillCheckResult, GameObject, Message
 
 
 class Creature(GameObject):
@@ -14,13 +15,12 @@ class Creature(GameObject):
     alive = True
 
     def __init__(self, STR=1, DEX=1, CON=1, INT=1, WIS=1, CHA=1,
-                 AC=1, MAX_HP=1, x=1, y=1, char='@', colour=(0, 0, 0),
+                 MAX_HP=1, x=1, y=1, char='@', colour=(0, 0, 0),
                  block_move=False):
         super().__init__(x, y, char, colour, block_move)
 
         self.MAX_HP = MAX_HP
         self.HP = MAX_HP
-        self.AC = AC
         self.consious = True
         self.stunned = False
 
@@ -33,34 +33,39 @@ class Creature(GameObject):
 
         self.equipment = {
             'head': None, 'chest': None,
-            'left': None, 'right': None,
-            'legs': None, 'cloak': None
+            'main': None, 'offhand': None,
+            'legs': None, 'cloak': None,
+            'belt': None, 'necklace': None,
+            'ring1': None, 'ring2': None
         }
         self.pack = []
 
-    @property
-    def STR_MOD(self):
-        return (self.STR - 10) // 2
+    def modifier(self, stat):
+        '''Compute the modifier for a stat'''
+        # TODO: check for item and status effects
+        return (getattr(self, stat) - 10) // 2
 
     @property
-    def DEX_MOD(self):
-        return (self.DEX - 10) // 2
+    def passive_perception(self):
+        base = 10 + self.modifier('WIS')
+        # TODO: handle item effects
+        return base
 
     @property
-    def CON_MOD(self):
-        return (self.CON - 10) // 2
+    def AC(self):
+        AC = 0
+        dex_mod = self.modifier('DEX')
 
-    @property
-    def INT_MOD(self):
-        return (self.INT - 10) // 2
+        for item in self.equipment.values():
+            if hasattr(item, 'AC_base'):
+                AC += item.AC_base
+                item_dex_mod = item.dex_mod(self)
+                dex_mod = min(dex_mod, item_dex_mod)
 
-    @property
-    def WIS_MOD(self):
-        return (self.WIS - 10) // 2
-
-    @property
-    def CHA_MOD(self):
-        return (self.CHA - 10) // 2
+        if AC == 0:
+            return 10 + dex_mod
+        else:
+            return AC + dex_mod
 
     def skill_check(self, stat, DC, modifier=0,
                     advantage=False, disadvantage=False):
@@ -84,7 +89,7 @@ class Creature(GameObject):
         elif disadvantage:
             result = min(result, roll())
 
-        result = result + getattr(self, stat + '_MOD') + modifier
+        result = result + self.modifier(stat) + modifier
 
         if result >= DC:
             return SkillCheckResult(success=True, crit=False)
@@ -92,35 +97,62 @@ class Creature(GameObject):
             return SkillCheckResult(success=False, crit=False)
 
     def move_or_melee(self, dx, dy, screen):
+        '''Move to a new cell or attack the creature in it'''
         new_x = self.x + dx
         new_y = self.y + dy
+
         for obj in screen.objects:
             if obj.alive and obj.x == new_x and obj.y == new_y:
-                self.basic_attack(obj)
-                break
+                attack_messages = self.basic_attack(obj)
+                return attack_messages
         else:
             self.move(dx, dy, screen)
+            return []
 
     def basic_attack(self, target):
         '''
         Make a basic attack against a target. Modifiers and base damage
         must be set in subclasses.
         '''
-        weapon = self.equipment.get('right')
+        messages = []
+        weapon = self.equipment.get('main')
         mod = weapon.atk_mod if weapon is not None else 5
+
         success, crit = self.skill_check('STR', target.AC, mod)
         if success:
             if crit:
                 if not weapon:
                     damage = 5
                 else:
-                    damage = weapon.crit(self)
+                    damage = weapon.crit()
             else:
                 if not weapon:
                     damage = 1
                 else:
-                    damage = weapon.damage(self)
-            target.lose_hp(damage)
+                    damage = weapon.damage()
+            if crit:
+                msg = '{} crit {} for {} damage!'
+            else:
+                msg = '{} hit {} for {} damage'
+            messages.append(
+                Message(msg.format(self.name, target.name, damage), LIGHT0))
+            target_messages = target.lose_hp(damage)
+            messages.extend(target_messages)
+        return messages
+
+    def equip(self, item, slot):
+        '''Attempt to equip an item'''
+        messages = []
+        current = self.equipment.get(slot)
+        if current is not None:
+            self.pack.append(current)
+        self.equipment[slot] = item
+        # Handle effects on equip (identify, curse etc...)
+        equip_messages = item.on_equip(self)
+        messages.append(
+            Message('{} equipped {}'.format(self.name, item.name), LIGHT0))
+        messages.extend(equip_messages)
+        return messages
 
     def lose_hp(self, damage):
         '''Take a hit and check for death'''
@@ -128,9 +160,13 @@ class Creature(GameObject):
         if self.HP <= 0:
             self.die()
 
+            msg = Message('{} died'.format(self.name), BRIGHT_RED)
+            return [msg]
+        return []
+
     def die(self):
         '''Deal with creature death'''
-        print('{} died'.format(self.name))
         self.char = '%'
+        self.colour = FADED_RED
         self.block_move = False
         self.alive = False

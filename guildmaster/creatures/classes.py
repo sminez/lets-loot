@@ -1,7 +1,10 @@
 '''
 Classes for PCs and NPCs
 '''
+from random import randint, choice
 from ..utils import stat_roll
+from ..items.armour_light import Padded, Leather, StuddedLeather
+from ..items.martial_melee import ShortSword, LongSword, Axe
 from collections import namedtuple
 
 
@@ -45,6 +48,11 @@ class Class:
                                     (ability_scores['CON'] - 10) // 2)
         return ability_scores
 
+    @classmethod
+    def get_equipment(cls, character):
+        '''generate some randomised starting equipment'''
+        return {}
+
 
 class Adventurer(Class):
     '''A jack of all trades'''
@@ -53,3 +61,16 @@ class Adventurer(Class):
     hit_die = [10]
     actions = {2: Action('search', 0, search)}
     skills = []
+
+    @classmethod
+    def get_starting_gear(cls, character):
+        '''generate some randomised starting equipment'''
+        starting_gear = {}
+        starting_gear['equipped'] = {
+            'chest': choice([Padded, Leather, StuddedLeather]),
+            'main': choice([ShortSword, LongSword, Axe])
+        }
+        starting_gear['pack'] = []
+        starting_gear['gold'] = randint(10, 40)
+
+        return starting_gear

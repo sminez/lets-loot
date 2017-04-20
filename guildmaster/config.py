@@ -81,5 +81,5 @@ LIGHT_WALLS = True
 
 
 # Panel config
-BAR_WIDTH = 25
+BAR_WIDTH = 20
 PANEL_HEIGHT = 8

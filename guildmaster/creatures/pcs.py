@@ -11,6 +11,6 @@ def new_PC(x, y, colour, name, race=Human, PC_class=Adventurer):
     This will eventually work for all races and classes but for now
     it will raise an exception on anything other than a Human Fighter.
     '''
-    char = race(PC_class, x, y, colour)
+    char = race(PC_class, x, y, colour, '@')
     char.name = name
     return char

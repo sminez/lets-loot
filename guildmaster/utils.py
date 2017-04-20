@@ -6,6 +6,7 @@ from collections import namedtuple
 
 
 SkillCheckResult = namedtuple('SkillCheckResult', 'success crit')
+Message = namedtuple('Message', 'text colour')
 
 
 class Tile:

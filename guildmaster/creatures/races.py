@@ -13,7 +13,7 @@ class Human(Creature):
     type = 'Humanoid'
     skills = []
 
-    def __init__(self, class_, x, y, colour):
+    def __init__(self, class_, x, y, colour, char):
         abilities = class_.get_ability_scores()
 
         # Humans get +1 to all abilities
@@ -21,7 +21,11 @@ class Human(Creature):
             if ability != 'MAX_HP':
                 abilities[ability] += 1
 
-        super().__init__(AC=10+abilities['DEX'], x=x, y=y, char='@',
-                         colour=colour, block_move=False, **abilities)
+        super().__init__(x=x, y=y, char=char, colour=colour,
+                         block_move=False, **abilities)
 
-        self.passive_perception = 10 + self.WIS_MOD
+        # Get some starting equipment based on class
+        starting_gear = class_.get_starting_gear(self)
+        self.equipment = starting_gear['equipped']
+        self.pack = starting_gear['pack']
+        self.gold = starting_gear['gold']
