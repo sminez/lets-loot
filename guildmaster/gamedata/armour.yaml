@@ -1,0 +1,113 @@
+# Information for armour items
+# ----------------------------------------------------------------------------
+# Name:
+#     name: in game display name
+#     char: single character to use as representation
+#     colour: must be one of the colours in the config file
+#     shortDescription: max one sentence
+#     longDescription: detail about effects and lore
+#     class: light|medium|heavy
+#     stealthDisadvantage: true|false
+#     allowedSlots: [chest|head|hands|feet|legs|cloak]
+#     AC: int
+#     weight: int
+#     cost: int
+#     equipEffect: []
+# ----------------------------------------------------------------------------
+Padded:
+    name: "Padded Coat"
+    char: ";"
+    colour: FADED_ORANGE
+    shortDescription: "A stiff coat, padded against the cold."
+    longDescription: "It offers minimal protection but restrics your movement."
+    class: light
+    stealthDisadvantage: true
+    allowedSlots: [chest]
+    AC: 11
+    weight: 8
+    cost: 5
+    equipEffect: []
+
+LeatherCoat:
+    name: "Leather Coat"
+    char: ";"
+    colour: FADED_ORANGE
+    shortDescription: "A reliable leather trenchcoat."
+    longDescription: "It's tough hide protects you and lets you move freely."
+    class: light
+    stealthDisadvantage: false
+    allowedSlots: [chest]
+    AC: 11
+    weight: 8
+    cost: 10
+    equipEffect: []
+
+StuddedLeatherCoat:
+    name: "Studded Leather Coat"
+    char: ";"
+    colour: FADED_ORANGE
+    shortDescription: "A coat commonly worn by thugs, it offers more protection that normal."
+    longDescription: "The rivets that adorn this coat deflect strikes and shots alike."
+    class: light
+    stealthDisadvantage: true
+    allowedSlots: [chest]
+    AC: 12
+    weight: 8
+    cost: 30
+    equipEffect: []
+
+ChainMail:
+    name: "Chain Mail Shirt"
+    char: ";"
+    colour: GRAY
+    shortDescription: "A mail shirt: heavy, but effective."
+    longDescription: "Worn under your clothes, it strikes a balance between protection and movement."
+    class: medium
+    stealthDisadvantage: false
+    allowedSlots: [chest]
+    AC: 12
+    weight: 20
+    cost: 50
+    equipEffect: []
+
+BreastPlate:
+    name: "Breastplate"
+    char: ";"
+    colour: GRAY
+    shortDescription: "A steel breastplate."
+    longDescription: "Your chest feels protected."
+    class: medium
+    stealthDisadvantage: true
+    allowedSlots: [chest]
+    AC: 14
+    weight: 20
+    cost: 200
+    equipEffect: []
+
+BearSuit:
+    name: "Bear Suit"
+    char: ";"
+    colour: GRAY
+    shortDescription: "A full body chainmail suit."
+    longDescription: "Used to protect against bear attacks, it stops most blows."
+    class: heavy
+    stealthDisadvantage: true
+    allowedSlots: [chest]
+    AC: 16
+    weight: 55
+    cost: 80
+    equipEffect: []
+
+PlateArmour:
+    name: "Plate"
+    char: ";"
+    colour: GRAY
+    shortDescription: "A full set of plate armour"
+    longDescription: "Completely enclosed, you feel invulnerable"
+    class: heavy
+    stealthDisadvantage: true
+    allowedSlots: [chest]
+    AC: 18
+    weight: 65
+    cost: 1000
+    equipEffect: []

@@ -1,0 +1,109 @@
+# Information for melee weapon items
+# ----------------------------------------------------------------------------
+# Name:
+#     name: in game display name
+#     char: single character to use as representation
+#     colour: must be one of the colours in the config file
+#     shortDescription: max one sentence
+#     longDescription: detail about effects and lore
+#     type: type name that matches with 'trained' field in characters
+#     damageType: blunt|slashing|piercing
+#     twoHanded: true|false
+#     atkMod: int
+#     dice: []
+#     modifier: int
+#     strikeEffect: []
+#     critBonus: int
+#     weight: int
+#     cost: int
+#     equipEffect: []
+# ----------------------------------------------------------------------------
+Dagger:
+    name: "Dagger"
+    char: "|"
+    colour: LIGHT1
+    shortDescription: "A small dagger"
+    longDescription: "Useful for finding weakpoints"
+    type: daggers
+    damageType: piercing
+    twoHanded: false
+    atkMod: 2
+    dice: [4]
+    modifier: 0
+    strikeEffect: []
+    critBonus: 5
+    weight: 1
+    cost: 2
+    equipEffect: []
+
+ShortSword:
+    name: "Short Sword"
+    char: "|"
+    colour: LIGHT1
+    shortDescription: "A simple short sword"
+    longDescription: "Less powerful but more versitile than a longsword"
+    type: swords
+    damageType: piercing
+    twoHanded: false
+    atkMod: 0
+    dice: [6]
+    modifier: 0
+    strikeEffect: []
+    critBonus: 0
+    weight: 2
+    cost: 10
+    equipEffect: []
+
+LongSword:
+    name: "Long Sword"
+    char: "|"
+    colour: LIGHT1
+    shortDescription: "A simple long sword"
+    longDescription: "The go to weapon for adventurers."
+    type: swords
+    damageType: slashing
+    twoHanded: false
+    atkMod: 0
+    dice: [8]
+    modifier: 0
+    strikeEffect: []
+    critBonus: 0
+    weight: 3
+    cost: 15
+    equipEffect: []
+
+HandAxe:
+    name: "Hand Axe"
+    char: "/"
+    colour: LIGHT1
+    shortDescription: "A small hand axe"
+    longDescription: "Useful for more than just chopping firewood."
+    type: axes
+    damageType: slashing
+    twoHanded: false
+    atkMod: 0
+    dice: [8]
+    modifier: 0
+    strikeEffect: []
+    critBonus: 0
+    weight: 4
+    cost: 10
+    equipEffect: []
+
+Staff:
+    name: "Staff"
+    char: "|"
+    colour: BRIGHT_BROWN
+    shortDescription: "A 6ft pole"
+    longDescription: "Useful for walking and beating in equal measures."
+    type: simple
+    damageType: blunt
+    twoHanded: false
+    atkMod: 0
+    dice: [6]
+    modifier: 0
+    strikeEffect: []
+    critBonus: 0
+    weight: 4
+    cost: 2
+    equipEffect: []

@@ -142,8 +142,8 @@ class Creature(GameObject):
                 msg = '{} hit {} for {} damage'
             messages.append(
                 Message(msg.format(self.name, target.name, damage), LIGHT0))
-            target_messages = target.lose_hp(damage)
-            if not target.alive and self.player_character:
+            target_messages, target_died = target.lose_hp(damage)
+            if target_died and self.player_character:
                 self.xp += target.XP_yield
                 if self.xp >= self.next_level:
                     self.level_up()
@@ -167,16 +167,18 @@ class Creature(GameObject):
 
     def lose_hp(self, damage):
         '''Take a hit and check for death'''
+        messages = []
+        died = False
+
         self.HP -= damage
         if self.HP <= 0:
             self.die()
-
-            msg = Message('{} died'.format(self.name), BRIGHT_RED)
-            return [msg]
+            died = True
+            messages.append(Message('{} died'.format(self.name), BRIGHT_RED))
         else:
             if self.player_character:
                 self.set_colour()
-        return []
+        return messages, died
 
     def set_colour(self):
         '''Set the player colour based on health'''
@@ -277,7 +279,7 @@ class Creature(GameObject):
         messages = []
         # TODO: add in modifiers from equipment? (maybe handle in skill check)
         #       look for traps
-        if self.skill_check('KNW', 18):
+        if self.skill_check('KNW', 20):
             for tile in map.neighbouring_tiles(self.x, self.y):
                 if tile.name == 'secret_door':
                     tile.closed_door()

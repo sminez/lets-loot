@@ -9,7 +9,7 @@ from ..dungeon.mapgen import Dungeon
 from ..config import BAR_WIDTH, PANEL_HEIGHT, VIM_BINDINGS
 from ..config import BLACK, DIM_FG1, DIM_FG2, LIGHT0, LIGHT4, DARK0
 from ..config import BRIGHT_RED, FADED_RED, BRIGHT_AQUA, FADED_AQUA
-from ..config import FOV_ALG, FOV_RADIUS1, FOV_RADIUS2, LIGHT_WALLS
+from ..config import FOV_ALG, LIGHT_WALLS
 
 
 class GameScreen:
@@ -119,11 +119,11 @@ class GameScreen:
                 if char.alive:
                     visible_tiles.update(tdl.map.quickFOV(
                         char.x, char.y, visible_tile, fov=FOV_ALG,
-                        radius=FOV_RADIUS1, lightWalls=LIGHT_WALLS,
+                        radius=self.player.vision[0], lightWalls=LIGHT_WALLS,
                         sphere=True))
                     visible_tiles2.update(tdl.map.quickFOV(
                         char.x, char.y, visible_tile, fov=FOV_ALG,
-                        radius=FOV_RADIUS2, lightWalls=LIGHT_WALLS,
+                        radius=self.player.vision[1], lightWalls=LIGHT_WALLS,
                         sphere=True))
 
             self.visible_tiles = visible_tiles
@@ -275,7 +275,7 @@ class GameScreen:
 
         for line in new_message_lines:
             # Overflow the messages to make space if needed
-            if len(self.messages) == self.panel_height - 1:
+            if len(self.messages) == self.panel_height - 2:
                 self.messages.pop(0)
             self.messages.append((line, message.colour))
 

@@ -1,0 +1,45 @@
+# Information for items
+# ----------------------------------------------------------------------------
+# Name:
+#     name: in game display name
+#     type: string
+#     char: single character to use as representation
+#     colour: must be one of the colours in the config file
+#     shortDescription: max one sentence
+#     longDescription: detail about effects and lore
+#     weight: int
+#     cost: int
+#     useEffect: []
+# ----------------------------------------------------------------------------
+healing_vial:
+    name: "healing vial"
+    type: potion
+    char: "!"
+    colour: FADED_PURPLE
+    shortDescription: "A glass vial containing a thick liquid..."
+    longDescription: "A healing vial: this fould concoction is for your own good"
+    weight: 1
+    cost: 20
+    useEffect: [heal_10]
+
+large_healing_vial:
+    name: "large healing vial"
+    type: potion
+    char: "!"
+    colour: FADED_PURPLE
+    shortDescription: "A glass vial containing a thick liquid..."
+    longDescription: "A large healing vial: this fould concoction is for your own good"
+    weight: 1
+    cost: 30
+    useEffect: [heal_16]
+
+scrying_stone:
+    name: "scrying stone"
+    type: artifact
+    char: ","
+    colour: FADED_AQUA
+    shortDescription: "A dull stone that glints in the light"
+    longDescription: "Scrying stones reveal information about your surroundings"
+    weight: 1
+    cost: 300
+    useEffect: [scry_50]
