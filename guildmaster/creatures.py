@@ -2,9 +2,9 @@
 Base classes and functions for creatures, NPCs and enemies
 '''
 from random import choice
-from ..config import LIGHT0, BRIGHT_RED, FADED_RED, BRIGHT_YELLOW
-from ..config import BRIGHT_ORANGE, BRIGHT_PURPLE, LEVEL_UP_XP_MULTIPLIER
-from ..utils import roll, SkillCheckResult, GameObject, Message
+from .config import LIGHT0, BRIGHT_RED, FADED_RED, BRIGHT_YELLOW
+from .config import BRIGHT_ORANGE, BRIGHT_PURPLE, LEVEL_UP_XP_MULTIPLIER
+from .utils import roll, SkillCheckResult, GameObject, Message
 
 
 class Creature(GameObject):

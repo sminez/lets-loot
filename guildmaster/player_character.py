@@ -3,12 +3,9 @@ Generation of Party Characters
 '''
 import yaml
 from random import randint, choice
-from ..config import LIGHT0
-from ..utils import stat_roll, roll
-from .base import Creature
-from ..items.base import Weapon, Armour, Item
-from .races import Human
-from .classes import Adventurer
+from .config import LIGHT0
+from .utils import stat_roll, roll
+from .creatures import Creature
 
 
 def random_ability_scores():

@@ -3,13 +3,13 @@ Main ui classes and interfaces
 '''
 import tdl
 import textwrap
-from ..utils import Message
-from ..creatures.pcs import new_PC
-from ..dungeon.mapgen import Dungeon
-from ..config import BAR_WIDTH, PANEL_HEIGHT, VIM_BINDINGS
-from ..config import BLACK, DIM_FG1, DIM_FG2, LIGHT0, LIGHT4, DARK0
-from ..config import BRIGHT_RED, FADED_RED, BRIGHT_AQUA, FADED_AQUA
-from ..config import FOV_ALG, LIGHT_WALLS
+from .utils import Message
+from .dungeon.mapgen import Dungeon
+from .player_character import new_PC
+from .config import FOV_ALG, LIGHT_WALLS
+from .config import BAR_WIDTH, PANEL_HEIGHT, VIM_BINDINGS
+from .config import BLACK, DIM_FG1, DIM_FG2, LIGHT0, LIGHT4, DARK0
+from .config import BRIGHT_RED, FADED_RED, BRIGHT_AQUA, FADED_AQUA
 
 
 class GameScreen:

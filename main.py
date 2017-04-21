@@ -1,4 +1,4 @@
-from guildmaster.ui.bases import GameScreen
+from guildmaster.ui import GameScreen
 
 
 if __name__ == '__main__':
