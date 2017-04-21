@@ -3,10 +3,10 @@ Main ui classes and interfaces
 '''
 import tdl
 import textwrap
-# from ..creatures.base import Creature
+from ..utils import Message
 from ..creatures.pcs import new_PC
 from ..dungeon.mapgen import Dungeon
-from ..config import BAR_WIDTH, PANEL_HEIGHT
+from ..config import BAR_WIDTH, PANEL_HEIGHT, VIM_BINDINGS
 from ..config import BLACK, DIM_FG1, DIM_FG2, LIGHT0, LIGHT4, DARK0
 from ..config import BRIGHT_RED, FADED_RED, BRIGHT_AQUA, FADED_AQUA
 from ..config import FOV_ALG, FOV_RADIUS1, FOV_RADIUS2, LIGHT_WALLS
@@ -25,7 +25,8 @@ class GameScreen:
     '''
     def __init__(self, height=60, width=90, fps=30, panel_height=PANEL_HEIGHT,
                  hp_bar_width=BAR_WIDTH, alt_layout=False,
-                 font='guildmaster/fonts/terminal16x16_gs_ro.png'):
+                 font='guildmaster/fonts/terminal16x16_gs_ro.png',
+                 vim_bindings=VIM_BINDINGS):
         self.width = width
         self.height = height
         self.map_height = height - panel_height
@@ -38,6 +39,8 @@ class GameScreen:
         self.font = font
         self.alt_layout = alt_layout
 
+        self.vim_bindings = vim_bindings
+
         # Initialise the player
         # TODO : character creation screen
         self.player = new_PC('Player')
@@ -46,6 +49,7 @@ class GameScreen:
 
         self.visible_tiles = set()
         self.visible_tiles2 = set()
+        self.magically_visible = set()
 
         # initialise message queue
         self.messages = []
@@ -66,7 +70,8 @@ class GameScreen:
                 ['New', 'Continue', 'Quit'], ['n', 'c', 'q'], bg=None)
 
             if choice == 0:
-                # self.new_game()
+                # TODO: always load persistant guild state
+                # self.player_character = self.new_character()
                 self.run()
             if choice == 1:
                 try:
@@ -133,6 +138,9 @@ class GameScreen:
                 elif (x, y) in self.visible_tiles2:
                     self.con.draw_char(x, y, tile.char,
                                        fg=DIM_FG2, bg=BLACK)
+                elif (x, y) in self.magically_visible:
+                    self.con.draw_char(x, y, tile.char,
+                                       fg=tile.fg, bg=BLACK)
                 else:
                     if tile.explored:
                         self.con.draw_char(x, y, tile.char,
@@ -194,21 +202,26 @@ class GameScreen:
         https://pythonhosted.org/tdl/tdl.event.KeyEvent-class.html#key
         '''
         keypress = tdl.event.key_wait()
-        compute_fov = tick = False
+        compute_fov = False
+        tick = True
         messages = []
 
         # Movement
-        if keypress.key in ['UP', 'DOWN', 'LEFT', 'RIGHT']:
-            compute_fov = tick = True
+        if self.vim_bindings:
+            directions = {'k': (0, -1), 'j': (0, 1),
+                          'h': (-1, 0), 'l': (1, 0),
+                          'y': (-1, -1), 'u': (1, -1),
+                          'b': (-1, 1), 'n': (1, 1)}
+            key = keypress.keychar
+        else:
+            directions = {'UP': (0, -1), 'DOWN': (0, 1),
+                          'LEFT': (-1, 0), 'RIGHT': (1, 0)}
+            key = keypress.key
 
-        if keypress.key == 'UP':
-            messages = self.player.move_or_melee(0, -1, lmap)
-        elif keypress.key == 'DOWN':
-            messages = self.player.move_or_melee(0, 1, lmap)
-        elif keypress.key == 'LEFT':
-            messages = self.player.move_or_melee(-1, 0, lmap)
-        elif keypress.key == 'RIGHT':
-            messages = self.player.move_or_melee(1, 0, lmap)
+        if key in directions:
+            compute_fov = True
+            x, y = directions[key]
+            messages = self.player.move_or_melee(x, y, lmap)
 
         # Menus
         elif keypress.keychar == 'i':
@@ -217,15 +230,33 @@ class GameScreen:
                 messages = self.player.use_item(item)
 
         # Actions
+        elif keypress.keychar == '.':
+            # . : Force tick with no action
+            pass
+        elif keypress.keychar == 'c':
+            # c : close a door
+            choice = self.current_map.close_door(
+                self, self.player.x, self.player.y)
+            if choice is not None:
+                choice.closed_door()
+                self.render_map(self.current_map.lmap, compute_fov=True)
+                messages = [Message('You close the door', LIGHT0)]
+            else:
+                tick = False
+                messages = [Message("You don't see anything to close", LIGHT0)]
         elif keypress.keychar == 'r' and keypress.shift:
-            # R to rest
-            tick = True
+            # R : rest
             messages = self.player.rest()
+        elif keypress.keychar == 's':
+            # s : search adjacent squares
+            messages = self.player.search(self.current_map)
 
         # Game control
         elif keypress.key == 'ENTER' and keypress.alt:
+            tick = False
             tdl.set_fullscreen(True)
         elif keypress.keychar == 'q' and keypress.shift:
+            tick = False
             should_exit = self.menu_selection(
                 'Really quit?', 20, 10, ['yes', 'no'], ['y', 'n'])
             if should_exit == 0:
@@ -343,11 +374,11 @@ class GameScreen:
 
 class Panel:
     '''An info panel for the UI'''
-    def __init__(self,  width, height, hp_bar_width, bg=DIM_FG1):
+    def __init__(self,  width, height, bar_width, bg=DIM_FG1):
         self.width = width
         self.height = height
-        self.hp_bar_width = hp_bar_width
-        self.msg_x = hp_bar_width + 2
+        self.bar_width = bar_width
+        self.msg_x = bar_width + 2
         self.bg = bg
         self.panel = tdl.Console(self.width, self.height)
 
@@ -360,27 +391,30 @@ class Panel:
 
     def render_bar(self, x, y, name, val, max_val, fg, bg):
         '''Render an info bar: hp, xp etc'''
-        bar_width = int(val / max_val * self.hp_bar_width)
+        if max_val > 0:
+            bar_len = int(val / max_val * self.bar_width)
+        else:
+            bar_len = 0
         text = '{}:{}/{}'.format(name, str(val), str(max_val))
-        text_x = x + (self.hp_bar_width - len(text)) // 2
+        text_x = x + (self.bar_width - len(text)) // 2
 
-        self.panel.draw_rect(x, y, self.hp_bar_width, 1, None, bg=bg)
+        self.panel.draw_rect(x, y, self.bar_width, 1, None, bg=bg)
 
-        if bar_width > 0:
-            self.panel.draw_rect(x, y, bar_width, 1, None, bg=fg)
+        if bar_len > 0:
+            self.panel.draw_rect(x, y, bar_len, 1, None, bg=fg)
 
         self.panel.draw_str(text_x, y, text, fg=LIGHT0, bg=None)
 
     def render_stats(self, player):
         title = '.: {} :.'.format(player.name)
-        text_x = 1 + (self.hp_bar_width - len(title)) // 2
+        text_x = 1 + (self.bar_width - len(title)) // 2
         self.panel.draw_str(text_x, 1, title, bg=DIM_FG2, fg=LIGHT0)
         self.render_bar(
             1, 2, 'HP', player.HP, player.MAX_HP, BRIGHT_RED, FADED_RED)
         self.render_bar(
             1, 3, 'SP', player.SP, player.MAX_SP, BRIGHT_AQUA, FADED_AQUA)
         self.render_bar(
-            1, 4, 'XP', player.current_xp, player.next_level, LIGHT0, LIGHT4)
+            1, 4, 'XP', player.current_xp, player.next_level, LIGHT4, DIM_FG1)
 
     def render_messages(self, messages):
         '''Display the current messages'''

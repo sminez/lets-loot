@@ -60,9 +60,9 @@ _"COLD STEEL!"_
 Goal: hitting things with hammers
 - Very strong and able to repair/upgrade equipment.
 
-Librarian
+Archivist
 ---------
-_"Plot twist!"_
+_"Knowledge is power!"_
 Goal: hoarding books
 - Becomes the mage class when magic is discovered
 

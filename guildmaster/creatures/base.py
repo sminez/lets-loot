@@ -17,7 +17,7 @@ class Creature(GameObject):
     alive = True
     player_character = False
 
-    def __init__(self, STR=1, DEX=1, CON=1, INT=1, WIS=1, CHA=1,
+    def __init__(self, STR=1, DEX=1, CON=1, INT=1, WIS=1, KNW=1,
                  MAX_HP=1, MAX_SP=0, x=1, y=1, char='@',
                  colour=(0, 0, 0), block_move=False):
         super().__init__(x, y, char, colour, block_move)
@@ -34,7 +34,7 @@ class Creature(GameObject):
         self.CON = CON
         self.INT = INT
         self.WIS = WIS
-        self.CHA = CHA
+        self.KNW = KNW
 
         self.equipment = {
             'head': None, 'chest': None,
@@ -112,8 +112,8 @@ class Creature(GameObject):
                 attack_messages = self.basic_attack(obj)
                 return attack_messages
         else:
-            self.move(dx, dy, screen)
-            return []
+            interaction_messages = self.move(dx, dy, screen)
+            return interaction_messages
 
     def basic_attack(self, target):
         '''
@@ -122,7 +122,7 @@ class Creature(GameObject):
         '''
         messages = []
         weapon = self.equipment.get('main')
-        mod = weapon.atk_mod if weapon is not None else 5
+        mod = weapon.atk_mod if weapon is not None else 0
 
         success, crit = self.skill_check('STR', target.AC, mod)
         if success:
@@ -262,7 +262,7 @@ class Creature(GameObject):
         # every third level increases a random stat by 1
         if self.level % 3 == 0:
             stat = choice(
-                [self.STR, self.DEX, self.CON, self.INT, self.WIS, self.CHA])
+                [self.STR, self.DEX, self.CON, self.INT, self.KNW, self.CHA])
             stat += 1
 
         # TODO : class based perks / abilities
@@ -271,3 +271,16 @@ class Creature(GameObject):
     def use_item(self, item):
         '''Use an item'''
         return [Message('You need to implement using items!', BRIGHT_PURPLE)]
+
+    def search(self, map):
+        '''Search in all adjacent squares for traps and hidden doors'''
+        messages = []
+        # TODO: add in modifiers from equipment? (maybe handle in skill check)
+        #       look for traps
+        if self.skill_check('KNW', 18):
+            for tile in map.neighbouring_tiles(self.x, self.y):
+                if tile.name == 'secret_door':
+                    tile.closed_door()
+                    messages.append(
+                        Message('You found a secret door!', LIGHT0))
+        return messages

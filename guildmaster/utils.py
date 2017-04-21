@@ -1,57 +1,12 @@
 '''
 Basic mechanics for use in other modules
 '''
-from .config import DARK0, DARK2, DARK4, WHITE
 from random import randint
 from collections import namedtuple
 
 
 SkillCheckResult = namedtuple('SkillCheckResult', 'success crit')
 Message = namedtuple('Message', 'text colour')
-
-
-class Tile:
-    '''A tile in the dungeon map'''
-    def __init__(self, name):
-        self.name = name
-        self.explored = False
-        # Initialise the tile settings
-        getattr(self, name)()
-
-    def rock(self):
-        self.char = '#'
-        self.fg, self.bg = DARK4, DARK0
-        self.block_move, self.block_sight = True, True
-
-    def floor(self):
-        self.char = '.'
-        self.fg, self.bg = DARK4, DARK0
-        self.block_move, self.block_sight = False, False
-
-    def closed_door(self):
-        self.char = '+'
-        self.fg, self.bg = DARK2, DARK0
-        self.block_move, self.block_sight = True, True
-
-    def open_door(self):
-        self.char = "'"
-        self.fg, self.bg = DARK2, DARK0
-        self.block_move, self.block_sight = False, False
-
-    def secret_door(self):
-        self.char = "#"
-        self.fg, self.bg = DARK4, DARK0
-        self.block_move, self.block_sight = False, True
-
-    def up(self):
-        self.char = "<"
-        self.fg, self.bg = WHITE, DARK0
-        self.block_move, self.block_sight = False, False
-
-    def down(self):
-        self.char = ">"
-        self.fg, self.bg = WHITE, DARK0
-        self.block_move, self.block_sight = False, False
 
 
 class GameObject:
@@ -78,18 +33,17 @@ class GameObject:
 
         destination = screen.current_map.lmap[new_y][new_x]
         if destination.block_move:
-            if destination.char == '+':
+            if destination.name == 'closed_door':
                 # open the door
-                destination.char = "'"
-                destination.block_move = False
-                destination.block_sight = False
-            return
+                destination.open_door()
+            return []
 
         for obj in screen.objects:
             if obj.x == new_x and obj.y == new_y and obj.block_move:
-                return
+                return []
 
         self.x, self.y = new_x, new_y
+        return []
 
 
 def roll(dice=20, modifier=0):
@@ -111,3 +65,23 @@ def stat_roll():
     '''
     rolls = [randint(1, 6) for _ in range(4)]
     return sum(rolls) - min(rolls)
+
+
+def key_to_coords(key, x, y):
+    '''Convert a key and position to a new position'''
+    if key in ['k', 'UP']:
+        return x, y-1
+    elif key in ['j', 'DOWN']:
+        return x, y+1
+    elif key in ['h', 'LEFT']:
+        return x-1, y
+    elif key in ['l', 'RIGHT']:
+        return x+1, y
+    elif key in ['y']:
+        return x-1, y-1
+    elif key in ['u']:
+        return x+1, y-1
+    elif key in ['b']:
+        return x-1, y+1
+    elif key in ['n']:
+        return x+1, y+1

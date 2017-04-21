@@ -19,25 +19,12 @@ def random_ability_scores():
     return [stat_roll() for _ in range(6)]
 
 
-def search(character):
-    '''Search the surrounding area for traps and secrets'''
-    search_range = character.WIS_MOD * 2 if character.WIS_MOD > 0 else 2
-    res = character.skill_check(stat='WIS', DC=20, modifier=character.level//2)
-    if res.success:
-        if res.crit:
-            # They found everything in range
-            pass
-        else:
-            # They found one thing in range
-            pass
-
-
 class Class:
     class_name = None
-    stat_order = ['CON', 'STR', 'DEX', 'WIS', 'INT', 'CHA']
+    stat_order = ['CON', 'STR', 'DEX', 'KNW', 'INT', 'WIS']
     hit_dice = []
     spell_dice = []
-    spell_stat = None
+    casting_stat = None
     actions = {}
     skills = []
 
@@ -48,10 +35,10 @@ class Class:
         ability_scores = dict(zip(cls.stat_order, ranked_scores))
         ability_scores['MAX_HP'] = (sum(cls.hit_dice) +
                                     (ability_scores['CON'] - 10) // 2)
-        if cls.spell_stat is not None:
+        if cls.casting_stat is not None:
             ability_scores['MAX_SP'] = (
                 roll(cls.spell_dice) +
-                (ability_scores[cls.spell_stat] - 10) // 2)
+                (ability_scores[cls.casting_stat] - 10) // 2)
         else:
             ability_scores['MAX_SP'] = 0
         return ability_scores
@@ -65,11 +52,11 @@ class Class:
 class Adventurer(Class):
     '''A jack of all trades'''
     class_name = 'Adventurer'
-    stat_order = ['CON', 'STR', 'DEX', 'WIS', 'INT', 'CHA']
+    stat_order = ['CON', 'STR', 'DEX', 'KNW', 'INT', 'WIS']
     hit_dice = [10]
     spell_dice = [4]
-    spell_stat = 'WIS'
-    actions = {2: Action('search', 0, search)}
+    casting_stat = 'INT'
+    actions = {}
     skills = []
 
     @classmethod

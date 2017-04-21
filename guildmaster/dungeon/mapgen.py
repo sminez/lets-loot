@@ -1,9 +1,65 @@
 '''
 Map creation algorithms
 '''
+import tdl
 from random import randint
-from ..utils import GameObject, Tile
-from ..config import MIN_ROOM_SIZE, MAX_ROOM_SIZE, MAX_ROOMS
+from ..utils import GameObject, Message, key_to_coords, roll
+from ..config import DARK0, DARK4, WHITE, FADED_BROWN
+from ..config import MIN_ROOM_SIZE, MAX_ROOM_SIZE, MAX_ROOMS, LIGHT1
+
+
+class Tile:
+    '''A tile in the dungeon map'''
+    def __init__(self, name):
+        self.explored = False
+        # Initialise the tile settings
+        getattr(self, name)()
+
+    def rock(self):
+        self.name = 'rock'
+        self.char = '#'
+        self.fg, self.bg = DARK4, DARK0
+        self.block_move, self.block_sight = True, True
+
+    def floor(self):
+        self.name = 'floor'
+        self.char = '.'
+        self.fg, self.bg = DARK4, DARK0
+        self.block_move, self.block_sight = False, False
+
+    def closed_door(self, allow_secret_door=False):
+        if allow_secret_door and roll(100) >= 98:
+            self.secret_door()
+        else:
+            self.name = 'closed_door'
+            self.char = '+'
+            self.fg, self.bg = FADED_BROWN, DARK0
+            self.block_move, self.block_sight = True, True
+
+    def open_door(self):
+        self.name = 'open_door'
+        self.char = "'"
+        self.fg, self.bg = FADED_BROWN, DARK0
+        self.block_move, self.block_sight = False, False
+
+    def secret_door(self):
+        # TODO: require successful search to pass through
+        self.name = 'secret_door'
+        self.char = "#"
+        self.fg, self.bg = DARK4, DARK0
+        self.block_move, self.block_sight = True, True
+
+    def up(self):
+        self.name = 'up'
+        self.char = "<"
+        self.fg, self.bg = WHITE, DARK0
+        self.block_move, self.block_sight = False, False
+
+    def down(self):
+        self.name = 'down'
+        self.char = ">"
+        self.fg, self.bg = WHITE, DARK0
+        self.block_move, self.block_sight = False, False
 
 
 class Room(GameObject):
@@ -153,29 +209,72 @@ class Map:
     def add_doors(self):
         '''
         Try to add some doors to the dungeon
-        This currently causes far too many doors to be added!
         '''
+        def valid_cell(x, y):
+            x_neighbours = [self.lmap[y][x-1].name, self.lmap[y][x+1].name]
+            y_neighbours = [self.lmap[y-1][x].name, self.lmap[y+1][x].name]
+            x2 = len([x for x in x_neighbours if x == 'floor'])
+            y2 = len([y for y in y_neighbours if y == 'floor'])
+            return (x2 == 2 and y2 == 0) or (x2 == 0 and y2 == 2)
+
         for room in self.rooms:
-            for cell in self.lmap[room.y1][room.x1:room.x2]:
-                if cell.name == 'floor':
-                    cell.closed_door()
+            for i, cell in enumerate(self.lmap[room.y1][room.x1:room.x2]):
+                if cell.name == 'floor' and valid_cell(room.x1+i, room.y1):
+                    cell.closed_door(allow_secret_door=True)
 
-            for cell in self.lmap[room.y2][room.x1:room.x2]:
-                if cell.name == 'floor':
-                    cell.closed_door()
+            for i, cell in enumerate(self.lmap[room.y2][room.x1:room.x2]):
+                if cell.name == 'floor' and valid_cell(room.x1+i, room.y2):
+                    cell.closed_door(allow_secret_door=True)
 
-            for row in self.lmap[room.y1:room.y2]:
+            for i, row in enumerate(self.lmap[room.y1:room.y2]):
                 cell = row[room.x1]
-                if cell.name == 'floor':
-                    cell.closed_door()
+                if cell.name == 'floor' and valid_cell(room.x1, room.y1+i):
+                    cell.closed_door(allow_secret_door=True)
 
-            for row in self.lmap[room.y1:room.y2]:
+            for i, row in enumerate(self.lmap[room.y1:room.y2]):
                 cell = row[room.x2]
-                if cell.name == 'floor':
-                    cell.closed_door()
+                if cell.name == 'floor' and valid_cell(room.x2, room.y1+i):
+                    cell.closed_door(allow_secret_door=True)
 
     def add_dead_ends(self):
         pass
 
     def add_features(self):
         pass
+
+    def neighbouring_tiles(self, x, y):
+        '''return all neighbouring tiles'''
+        return [self.lmap[y][x-1], self.lmap[y][x+1],
+                self.lmap[y-1][x], self.lmap[y+1][x],
+                self.lmap[y-1][x-1], self.lmap[y+1][x-1],
+                self.lmap[y-1][x+1], self.lmap[y+1][x+1]]
+
+    def close_door(self, screen, x, y):
+        '''Allow the player to close a door'''
+        neighbours = self.neighbouring_tiles(x, y)
+        doors = [n for n in neighbours if n.name == 'open_door']
+
+        if len(doors) == 1:
+            return doors[0]
+        elif len(doors) > 1:
+            screen.add_message(Message('Select a door...', LIGHT1))
+            screen.panel.render_messages(screen.messages)
+            tdl.flush()
+            tdl.event.key_wait()
+            keypress = tdl.event.key_wait()
+            keys = ['UP', 'DOWN', 'LEFT', 'RIGHT']
+            keychars = ['h', 'j', 'k', 'l', 'y', 'u', 'b', 'n']
+            if keypress.key in keys:
+                key = keypress.key
+            elif keypress.keychar in keychars:
+                key = keypress.keychar
+            else:
+                return None
+            x, y = key_to_coords(key, x, y)
+            tile = screen.current_map.lmap[y][x]
+            if tile.name == 'open_door':
+                return tile
+            else:
+                return None
+        else:
+            return None
