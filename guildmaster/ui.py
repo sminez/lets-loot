@@ -16,12 +16,14 @@ class GameScreen:
     '''
     Control class that handles setting tdl config options
     and manages the overall UI
+    See http://mifki.com/df/fontgen/ for generating fonts.
+    Requires running this on the file you get:
+    convert tileset.png -background black -alpha remove <name>.png
     '''
     def __init__(self, height=60, width=90, fps=30, panel_height=PANEL_HEIGHT,
                  hp_bar_width=BAR_WIDTH, alt_layout=False,
-                 # font='guildmaster/fonts/dejavu_wide16x16_gs_tc.png',
-                 font='guildmaster/fonts/terminal16x16_gs_ro.png',
-                 # font='guildmaster/fonts/consolas_unicode_16x16.png',
+                 font='guildmaster/fonts/terminal12x12_gs_ro.png',
+                 # font='guildmaster/fonts/hack15x15.png',
                  vim_bindings=VIM_BINDINGS):
         self.width = width
         self.height = height
@@ -50,7 +52,8 @@ class GameScreen:
         # initialise message queue
         self.messages = []
 
-        tdl.set_font(self.font, greyscale=True, altLayout=self.alt_layout)
+        tdl.set_font(self.font, greyscale=True, altLayout=self.alt_layout,
+                     columns=16, rows=16)
         tdl.event.set_key_repeat(delay=500, interval=50)
         self.root = tdl.init(self.width, self.height,
                              title="Guild Master", fullscreen=False)
@@ -79,6 +82,11 @@ class GameScreen:
 =     \____|__  /\____|__  /_______  /  |____|   /_______  / |____|_  /     =
 =             \/         \/        \/                    \/         \/      =
 =============================================================================
+                _         _   _       _                _   _
+               | |    ___| |_( )___  | |    ___   ___ | |_| |
+               | |   / _ \ __|// __| | |   / _ \ / _ \| __| |
+               | |__|  __/ |_  \__ \ | |__| (_) | (_) | |_|_|
+               |_____\___|\__| |___/ |_____\___/ \___/ \__(_)
 ''',
                 80, 30, ['New', 'Continue', 'Quit'], ['n', 'c', 'q'],
                 bg=None, ascii_art=True)
@@ -116,7 +124,7 @@ class GameScreen:
         '''Remove an object from the console'''
         self.con.draw_char(obj.x, obj.y, ' ', obj.colour, bg=None)
 
-    def render_map(self, lmap, compute_fov):
+    def render_map(self, lmap, compute_fov_agro):
         '''Rended the nested list structure as the map'''
         def visible_tile(x, y):
             if x >= len(lmap[0]) or x < 0:
@@ -126,7 +134,7 @@ class GameScreen:
             else:
                 return not lmap[y][x].block_sight
 
-        if compute_fov:
+        if compute_fov_agro:
             self.dungeon.pathfinder.agro_heatmap(self.player)
             visible_tiles = set()
             visible_tiles2 = set()
@@ -147,6 +155,7 @@ class GameScreen:
         for y, row in enumerate(lmap):
             for x, tile in enumerate(row):
                 # XXX: Uncomment to view the agro heatmap on floor tiles
+                # tile.explored = True
                 # if tile.name == 'floor':
                 #     tile.char = chr(96 + tile.agro_weight)
 
@@ -176,10 +185,10 @@ class GameScreen:
         x, y = self.current_map.rooms[0].center
         self.player.x, self.player.y = x, y
 
-        compute_fov = True
+        compute_fov_agro = True
 
         while not tdl.event.is_window_closed():
-            self.render_map(self.current_map.lmap, compute_fov)
+            self.render_map(self.current_map.lmap, compute_fov_agro)
 
             for obj in self.objects:
                 self.render_object(obj)
@@ -203,7 +212,7 @@ class GameScreen:
             for obj in self.objects:
                 self.clear_object(obj)
 
-            compute_fov, should_exit, tick = self.handle_keys(self)
+            compute_fov_agro, should_exit, tick = self.handle_keys(self)
 
             if tick:
                 for obj in self.objects:
@@ -219,7 +228,7 @@ class GameScreen:
         https://pythonhosted.org/tdl/tdl.event.KeyEvent-class.html#key
         '''
         keypress = tdl.event.key_wait()
-        compute_fov = False
+        compute_fov_agro = False
         tick = True
         messages = []
 
@@ -236,7 +245,7 @@ class GameScreen:
             key = keypress.key
 
         if key in directions:
-            compute_fov = True
+            compute_fov_agro = True
             x, y = directions[key]
             messages = self.player.move_or_melee(x, y, lmap)
 
@@ -256,7 +265,7 @@ class GameScreen:
                 self, self.player.x, self.player.y)
             if choice is not None:
                 choice.closed_door()
-                self.render_map(self.current_map.lmap, compute_fov=True)
+                self.render_map(self.current_map.lmap, compute_fov_agro=True)
                 messages = [Message('You close the door', LIGHT0)]
             else:
                 tick = False
@@ -279,12 +288,12 @@ class GameScreen:
             if should_exit == 0:
                 # TODO: implement run saving
                 self.root.clear()
-                return compute_fov, True, tick
+                return compute_fov_agro, True, tick
 
         for message in messages:
             self.add_message(message)
 
-        return compute_fov, False, tick
+        return compute_fov_agro, False, tick
 
     def add_message(self, message):
         '''Add a new message to the message buffer'''

@@ -13,7 +13,8 @@ from ..config import MIN_ROOM_SIZE, MAX_ROOM_SIZE, MAX_ROOMS, LIGHT1
 class Tile:
     '''A tile in the dungeon map'''
     def __init__(self, name, room_id=-62):
-        self.explored = True
+        # NOTE: room_id=-62 sets char to '#' on the path_preview script
+        self.explored = False
         self.path_cost = None
         self.agro_cost = 1
         self.agro_weight = None
@@ -22,7 +23,7 @@ class Tile:
         getattr(self, name)()
 
     def __lt__(self, other):
-        return True
+        return self.path_cost <= other.path_cost
 
     def wall(self):
         self.name = 'wall'
