@@ -279,7 +279,8 @@ class Creature(GameObject):
         messages = []
         # TODO: add in modifiers from equipment? (maybe handle in skill check)
         #       look for traps
-        if self.skill_check('KNW', 20):
+        res = self.skill_check('KNW', 20)
+        if res.success:
             for tile in map.neighbouring_tiles(self.x, self.y):
                 if tile.name == 'secret_door':
                     tile.closed_door()

@@ -8,6 +8,7 @@
 #     castingStat: STR|DEX|CON|INT|WIS|KNW|null
 #     trained: [list of skills and equipment that this class gets +2 in] (stacks with race) 
 #     abilities: [list of starting abilities]
+#     agroModifier: int
 #     onLevelUp:
 #         spellSlots: [one spell slot for each level listed]
 #         spellFocus: [+1 to spell casting checks at each level]
@@ -29,6 +30,7 @@ Adventurer:
     castingStat: null
     trained: [swords,daggers,pistols,search]
     abilities: [dodge]
+    agroModifier: 0
     onLevelUp:
         spellSlots: []
         spellFocus: []
@@ -51,6 +53,7 @@ Archivist:
     castingStat: KNW
     trained: [archive_magic,disarm_trap,search]
     abilities: [dodge]
+    agroModifier: -1
     onLevelUp:
         spellSlots: [1,1,'all']
         spellFocus: [1,5,10,25,40,50]

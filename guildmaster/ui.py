@@ -16,16 +16,12 @@ class GameScreen:
     '''
     Control class that handles setting tdl config options
     and manages the overall UI
-    Alternate fonts:
-        guildmaster/fonts/dejavu_wide16x16_gs_tc.png True
-        guildmaster/fonts/dejavu_wide12x12_gs_tc.png True
-        guildmaster/fonts/terminal16x16_gs_ro.png False
-        guildmaster/fonts/terminal12x12_gs_ro.png False
-        guildmaster/fonts/consolas_unicode_16x16.png False
     '''
     def __init__(self, height=60, width=90, fps=30, panel_height=PANEL_HEIGHT,
                  hp_bar_width=BAR_WIDTH, alt_layout=False,
+                 # font='guildmaster/fonts/dejavu_wide16x16_gs_tc.png',
                  font='guildmaster/fonts/terminal16x16_gs_ro.png',
+                 # font='guildmaster/fonts/consolas_unicode_16x16.png',
                  vim_bindings=VIM_BINDINGS):
         self.width = width
         self.height = height
@@ -43,7 +39,7 @@ class GameScreen:
 
         # Initialise the player
         # TODO : character creation screen
-        self.player = new_PC('Player')
+        self.player = new_PC('Player', 'Human')
         self.player_and_allies = [self.player]
         self.objects = [self.player]
 
@@ -57,17 +53,35 @@ class GameScreen:
         tdl.set_font(self.font, greyscale=True, altLayout=self.alt_layout)
         tdl.event.set_key_repeat(delay=500, interval=50)
         self.root = tdl.init(self.width, self.height,
-                             title="GuildMaster", fullscreen=False)
+                             title="Guild Master", fullscreen=False)
         self.con = tdl.Console(self.width, self.map_height)
         self.panel = Panel(self.width, self.panel_height, self.hp_bar_width)
         tdl.set_fps(self.fps)
 
     def main_menu(self):
         '''Main menu for starting / loading games'''
+        # http://www.network-science.de/ascii/
         while True:
             choice = self.menu_selection(
-                'Guild Master', 30, 30,
-                ['New', 'Continue', 'Quit'], ['n', 'c', 'q'], bg=None)
+                '''\
+=============================================================================
+=                                                                           =
+=                   ________ ____ ___.___.____     ________                 =
+=             /\   /  _____/|    |   \   |    |    \______ \    /\          =
+=             \/  /   \  ___|    |   /   |    |     |    |  \   \/          =
+=             /\  \    \_\  \    |  /|   |    |___  |    |   \  /\          =
+=          /\ \/   \______  /______/ |___|_______ \/_______  /  \/  /\\      =
+=          \/             \/                     \/        \/       \/      =
+=        _____      _____    _________________________________________      =
+=       /     \    /  _  \  /   _____/\__    ___/\_   _____/\______   \\     =
+=      /  \ /  \  /  /_\  \ \_____  \   |    |    |    __)_  |       _/     =
+=     /    Y    \/    |    \/        \  |    |    |        \ |    |   \\     =
+=     \____|__  /\____|__  /_______  /  |____|   /_______  / |____|_  /     =
+=             \/         \/        \/                    \/         \/      =
+=============================================================================
+''',
+                80, 30, ['New', 'Continue', 'Quit'], ['n', 'c', 'q'],
+                bg=None, ascii_art=True)
 
             if choice == 0:
                 # TODO: always load persistant guild state
@@ -113,6 +127,7 @@ class GameScreen:
                 return not lmap[y][x].block_sight
 
         if compute_fov:
+            self.dungeon.pathfinder.agro_heatmap(self.player)
             visible_tiles = set()
             visible_tiles2 = set()
             for char in self.player_and_allies:
@@ -131,28 +146,30 @@ class GameScreen:
 
         for y, row in enumerate(lmap):
             for x, tile in enumerate(row):
+                # XXX: Uncomment to view the agro heatmap on floor tiles
+                # if tile.name == 'floor':
+                #     tile.char = chr(96 + tile.agro_weight)
+
                 if (x, y) in self.visible_tiles:
                     tile.explored = True
-                    self.con.draw_char(x, y, tile.char,
-                                       fg=tile.fg, bg=tile.bg)
+                    self.con.draw_char(x, y, tile.char, fg=tile.fg, bg=tile.bg)
                 elif (x, y) in self.visible_tiles2:
-                    self.con.draw_char(x, y, tile.char,
-                                       fg=DIM_FG2, bg=BLACK)
+                    self.con.draw_char(x, y, tile.char, fg=DIM_FG2, bg=BLACK)
                 elif (x, y) in self.magically_visible:
-                    self.con.draw_char(x, y, tile.char,
-                                       fg=tile.fg, bg=BLACK)
+                    self.con.draw_char(x, y, tile.char, fg=tile.fg, bg=BLACK)
                 else:
                     if tile.explored:
                         self.con.draw_char(x, y, tile.char,
                                            fg=DIM_FG1, bg=BLACK)
                     else:
-                        self.con.draw_char(x, y, ' ',
-                                           fg=None, bg=BLACK)
+                        self.con.draw_char(x, y, ' ', fg=None, bg=BLACK)
 
     def run(self):
         '''
         Main rendering loop: calls handle_keys
         '''
+        # initialise message queue
+        self.messages = []
 
         self.dungeon = Dungeon(height=self.map_height, width=self.width)
         self.current_map = self.dungeon[0]
@@ -294,7 +311,7 @@ class GameScreen:
         tdl.event.key_wait()
 
     def menu_selection(self, title, width, height, options, keys=None,
-                       bg=DARK0):
+                       bg=DARK0, ascii_art=False):
         '''Render a menu and return a selected index from options'''
         def chunked(l):
             return [l[i:i+26] for i in range(0, len(l), 26)]
@@ -303,7 +320,10 @@ class GameScreen:
         if keys is not None and len(keys) != len(options):
             raise IndexError('incorrect number of keys given for options')
 
-        title = textwrap.wrap('.: ' + title + ' :.', width)
+        if not ascii_art:
+            title = textwrap.wrap('.: ' + title + ' :.', width)
+        else:
+            title = title.split('\n')
         chunked_options = chunked(options)
 
         window = tdl.Console(width, height)

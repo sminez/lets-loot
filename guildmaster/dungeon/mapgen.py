@@ -2,7 +2,9 @@
 Map creation algorithms
 '''
 import tdl
-from random import randint
+import math
+from random import choice, randint
+from .pathfinding import PathFinder
 from ..utils import GameObject, Message, key_to_coords, roll
 from ..config import DARK0, DARK4, WHITE, FADED_BROWN
 from ..config import MIN_ROOM_SIZE, MAX_ROOM_SIZE, MAX_ROOMS, LIGHT1
@@ -10,22 +12,32 @@ from ..config import MIN_ROOM_SIZE, MAX_ROOM_SIZE, MAX_ROOMS, LIGHT1
 
 class Tile:
     '''A tile in the dungeon map'''
-    def __init__(self, name):
-        self.explored = False
+    def __init__(self, name, room_id=-62):
+        self.explored = True
+        self.path_cost = None
+        self.agro_cost = 1
+        self.agro_weight = None
+        self.room_id = room_id
         # Initialise the tile settings
         getattr(self, name)()
 
-    def rock(self):
-        self.name = 'rock'
+    def __lt__(self, other):
+        return True
+
+    def wall(self):
+        self.name = 'wall'
         self.char = '#'
         self.fg, self.bg = DARK4, DARK0
         self.block_move, self.block_sight = True, True
+        self.agro_cost = 4
 
     def floor(self):
         self.name = 'floor'
         self.char = '.'
         self.fg, self.bg = DARK4, DARK0
         self.block_move, self.block_sight = False, False
+        self.path_cost = 1
+        self.agro_cost = 1
 
     def closed_door(self, allow_secret_door=False):
         if allow_secret_door and roll(100) >= 98:
@@ -35,31 +47,39 @@ class Tile:
             self.char = '+'
             self.fg, self.bg = FADED_BROWN, DARK0
             self.block_move, self.block_sight = True, True
+            self.path_cost = 2
+            self.agro_cost = 2
 
     def open_door(self):
         self.name = 'open_door'
         self.char = "'"
         self.fg, self.bg = FADED_BROWN, DARK0
         self.block_move, self.block_sight = False, False
+        self.path_cost = 1
+        self.agro_cost = 1
 
     def secret_door(self):
-        # TODO: require successful search to pass through
         self.name = 'secret_door'
         self.char = "#"
         self.fg, self.bg = DARK4, DARK0
         self.block_move, self.block_sight = True, True
+        self.agro_cost = 3
 
     def up(self):
         self.name = 'up'
         self.char = "<"
         self.fg, self.bg = WHITE, DARK0
         self.block_move, self.block_sight = False, False
+        self.path_cost = 1
+        self.agro_cost = 1
 
     def down(self):
         self.name = 'down'
         self.char = ">"
         self.fg, self.bg = WHITE, DARK0
         self.block_move, self.block_sight = False, False
+        self.path_cost = 1
+        self.agro_cost = 1
 
 
 class Room(GameObject):
@@ -69,6 +89,10 @@ class Room(GameObject):
         self.y1 = y
         self.x2 = x + width
         self.y2 = y + height
+        self.id = None
+
+    def __lt__(self, other):
+        return self.id < other.id
 
     @property
     def center(self):
@@ -93,31 +117,31 @@ class Room(GameObject):
         right = self.x1 > other.x1 and self.x1 > other.x2
         return left or right
 
-    def random_point(self):
+    def random_point(self, offset=1):
         '''Return a random point inside the room'''
-        x = randint(self.x1+1, self.x2-1)
-        y = randint(self.y1+1, self.y2-1)
+        x = randint(self.x1+offset, self.x2-offset)
+        y = randint(self.y1+offset, self.y2-offset)
         return (x, y)
 
 
-class Dungeon:
-    '''Control class for a map and its contents'''
-    def __init__(self, height=40, width=60):
-        self.height = height
-        self.width = width
+class Map:
+    '''Map for a floor in the dungeon'''
+    def __init__(self, width, height, depth):
+        # NOTE: these are read from config.py
         self.max_rooms = MAX_ROOMS
         self.max_room_size = MAX_ROOM_SIZE
         self.min_room_size = MIN_ROOM_SIZE
 
-        self.maps = []
-        self.generate()  # Appends a new map to self.maps
-
-    def __getitem__(self, ix):
-        return self.maps[ix]
-
-    def generate(self):
-        '''Generate a new map'''
-        new_map = Map(self.width, self.height)
+        self.width = width
+        self.height = height
+        self.depth = depth + 1  # depth is the depth before adding this map
+        self.lmap = [[Tile('wall') for x in range(width)]
+                     for y in range(height)]
+        self.rooms = []
+        self.graph = {}
+        self.centers = {}
+        self.starting_x = 0
+        self.starting_y = 0
 
         # Add the rooms
         for rm in range(self.max_rooms):
@@ -127,84 +151,141 @@ class Dungeon:
             y = randint(0, self.height - rheight - 1)
 
             new_room = Room(x, y, rwidth, rheight)
-            for room in new_map.rooms:
+            for room in self.rooms:
                 if new_room.overlaps_with(room):
                     break
             else:
-                new_map.add_room(new_room)
+                self.add_room(new_room)
 
-        # Connect the rooms and add some noise
-        new_map.connect()
-        new_map.add_dead_ends()
-        new_map.add_doors()
+        # Connect the rooms and populate with features
+        self.generate_graph()
+        self.connect()
+        self.add_doors()
+        self.add_features()
 
-        # Populate with features
-        new_map.add_features()
+    def generate_graph(self):
+        '''
+        Generate a randomised connected graph via an inital spanning tree
+        generated using Prim's MST algorithm.
+        NOTE: each edge is stored twice: a->b, b->a for path finding
+        '''
+        rooms = set(self.rooms)
+        G = {r: set() for r in rooms}
+        so_far = {self.rooms[0]}
 
-        # Add the map to the dungeon
-        self.maps.append(new_map)
+        # Prim's MST
+        while len(so_far) < len(rooms):
+            remaining = rooms.difference(so_far)
+            weights = [(self.room_cost(s, r), s, r)
+                       for s in so_far for r in remaining]
+            # Select the two rooms that are closest to one another, one from
+            # 'so_far' and one from 'remaining'
+            _, existing, new = min(weights, key=lambda w: w[0])
+            G[existing].add(new)
+            G[new].add(existing)
+            so_far.add(new)
 
+        # Additional connections
+        for n in range(randint(5, len(rooms))):
+            n1 = choice(list(rooms))
+            existing = G[n1]
+            existing.add(n1)
+            n2 = choice(list(rooms.difference(existing)))
+            G[n1].add(n2)
+            G[n2].add(n1)
 
-class Map:
-    '''Map for a floor in the dungeon'''
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.lmap = [
-            [Tile('rock') for x in range(width)]
-            for y in range(height)]
-        self.rooms = []
-        self.centers = {}
-        self.starting_x = 0
-        self.starting_y = 0
+        self.graph = G
+
+    @property
+    def graph_edges(self):
+        '''return a list of edges in the graph'''
+        edges = set()
+        for node, connections in self.graph.items():
+            for connection in connections:
+                edge = (node, connection)
+                if (edge in edges) or ((edge[1], edge[0]) in edges):
+                    pass
+                else:
+                    edges.add(edge)
+        return list(edges)
+
+    def neighbouring_rooms(self, room):
+        '''Return all rooms connected to this one'''
+        return self.graph[room]
+
+    def neighbouring_tiles(self, x, y, include_coords=False):
+        '''return all neighbouring tiles'''
+        coords = [(x-1, y), (x+1, y), (x, y-1), (x, y+1),
+                  (x-1, y-1), (x-1, y+1), (x+1, y-1), (x+1, y+1)]
+
+        tiles = []
+
+        for point in coords:
+            x, y = point
+            if (0 <= x < len(self.lmap[0])) and (0 <= y < len(self.lmap)):
+                tiles.append((point, self.lmap[y][x]))
+
+        if include_coords:
+            return tiles
+        else:
+            return [t[1] for t in tiles]
+
+    def room_cost(self, r1, r2):
+        '''Weight edges based on displacement of room centres'''
+        x1, y1 = r1.center
+        x2, y2 = r2.center
+        return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
 
     def add_room(self, room):
         '''Add a new, non-overlapping room to the map'''
+        ID = len(self.rooms)
+        room.id = ID
+
         for x in range(room.x1+1, room.x2):
             for y in range(room.y1+1, room.y2):
-                self.lmap[y][x] = Tile('floor')
+                self.lmap[y][x] = Tile('floor', ID)
 
         if len(self.rooms) == 0:
             # First room is the entry point
             self.starting_x, self.starting_y = room.random_point()
-            self.lmap[self.starting_y][self.starting_x] = Tile('up')
+            self.lmap[self.starting_y][self.starting_x].up()
         else:
             pass
 
         self.rooms.append(room)
 
-    def h_corridor(self, x1, x2, y):
-        '''Draw a corridor from x1 to x2 and y'''
-        for x in range(min(x1, x2), max(x1, x2)+1):
-            self.lmap[y][x] = Tile('floor')
+    def corridor(self, p1, p2, const, horizontal):
+        '''Draw a corridor from p1 to p2 at constant x/y'''
+        start, finish = min(p1, p2), max(p1, p2)
 
-    def v_corridor(self, y1, y2, x):
-        '''Draw a corridor from y1 to y2 at x'''
-        for y in range(min(y1, y2), max(y1, y2)+1):
-            self.lmap[y][x] = Tile('floor')
+        if horizontal:
+            for x in range(start, finish+1):
+                self.lmap[const][x].floor()
+        else:
+            for y in range(start, finish+1):
+                self.lmap[y][const].floor()
 
     def connect(self):
         '''Ensure that all rooms can be reached'''
-        for ix, room in enumerate(self.rooms):
-            neighbour = self.rooms[ix-1]
-
+        for room, neighbour in self.graph_edges:
             # Check the relative positions of the two rooms
             horizontal = room.horizontal_with(neighbour)
             # Take a random point from each room to work with
-            x1, y1 = room.random_point()
-            x2, y2 = neighbour.random_point()
+            x1, y1 = room.random_point(offset=3)
+            x2, y2 = neighbour.random_point(offset=3)
 
             # Connect the rooms
             if horizontal:
-                xdiv = randint(min(x1, x2), max(x1, x2))
-                self.h_corridor(x1, xdiv, y1)
-                self.h_corridor(x2, xdiv, y2)
-                self.v_corridor(y1, y2, xdiv)
+                div = randint(min(x1, x2), max(x1, x2))
+                p1, p2, const1, const2 = x1, x2, y1, y2
             else:
-                ydiv = randint(min(y1, y2), max(y1, y2))
-                self.v_corridor(y1, ydiv, x1)
-                self.v_corridor(y2, ydiv, x2)
-                self.h_corridor(x1, x2, ydiv)
+                div = randint(min(y1, y2), max(y1, y2))
+                p1, p2, const1, const2 = y1, y2, x1, x2
+
+            # This makes sure that each corridor has a bend in it
+            self.corridor(p1, div, const1, horizontal)
+            self.corridor(p2, div, const2, horizontal)
+            self.corridor(const1, const2, div, not horizontal)
 
     def add_doors(self):
         '''
@@ -236,18 +317,8 @@ class Map:
                 if cell.name == 'floor' and valid_cell(room.x2, room.y1+i):
                     cell.closed_door(allow_secret_door=True)
 
-    def add_dead_ends(self):
-        pass
-
     def add_features(self):
         pass
-
-    def neighbouring_tiles(self, x, y):
-        '''return all neighbouring tiles'''
-        return [self.lmap[y][x-1], self.lmap[y][x+1],
-                self.lmap[y-1][x], self.lmap[y+1][x],
-                self.lmap[y-1][x-1], self.lmap[y+1][x-1],
-                self.lmap[y-1][x+1], self.lmap[y+1][x+1]]
 
     def close_door(self, screen, x, y):
         '''Allow the player to close a door'''
@@ -278,3 +349,23 @@ class Map:
                 return None
         else:
             return None
+
+
+class Dungeon:
+    '''Control class for a map and its contents'''
+    def __init__(self, height=40, width=60):
+        self.height = height
+        self.width = width
+
+        self.maps = []
+        self.new_floor()  # Appends a new map to self.maps
+
+        self.pathfinder = PathFinder(self.maps[0])
+
+    def __getitem__(self, ix):
+        return self.maps[ix]
+
+    def new_floor(self):
+        '''Generate a new map'''
+        # TODO: have some additional stuff set by the current level etc
+        self.maps.append(Map(self.width, self.height, len(self.maps)))

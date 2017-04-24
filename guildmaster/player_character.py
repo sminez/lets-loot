@@ -53,6 +53,7 @@ def new_PC(name, PC_race='Human', PC_class='Adventurer'):
     PC.xp_mod = PC_race['xpMod']
     PC.abilites = PC_race['abilities']
     PC.trained = PC_race['trained']
+    PC.agro_base = PC_race['agroBase']
 
     # Copy over Class details
     PC.hit_dice = PC_class['hitDice']
@@ -61,6 +62,7 @@ def new_PC(name, PC_race='Human', PC_class='Adventurer'):
     PC.trained += PC_class['trained']
     PC.abilites += PC_class['abilities']
     PC.on_level_up = PC_class['onLevelUp']
+    PC.agro_base += PC_class['agroModifier']
 
     # Fetch starting equipment and gold
     # weapon = choice(PC_class['equipment']['weapons'])

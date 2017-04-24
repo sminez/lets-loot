@@ -8,6 +8,7 @@
 #     type: humanoid | beast | undead | daemon ...
 #     statBonus: STR,DEX,CON,INT,WIS,KNW
 #     xpMod: [float multiplier for REQUIRED xp]
+#     agroBase: int
 #     abilities: [list of abilities from abilities.yaml]
 #     trained: [list of skills and equipment that this race gets +2 on]
 #     allowedClasses: [list of classes from classes.yaml]
@@ -21,10 +22,11 @@ Human:
       skillfull.
     size: 1
     speed: 2
-    vision: [7,10]
+    vision: [8,12]
     type: humanoid
     statBonus: [1,1,1,1,1,0]
     xpMod: 1.0
+    agroBase: 15
     abilities: [generalist]
     trained: [pistols,swords]
     allowedClasses: [Adventurer]
@@ -38,10 +40,11 @@ Halfling:
         to the Humans and now they walk freely among us.
     size: 0
     speed: 2
-    vision: [7,12]
+    vision: [9,13]
     type: humanoid
     statBonus: [-1,2,0,1,2,1]
     xpMod: 0.9
+    agroBase: 12
     abilities: [natural_stealth,lucky,keen_senses]
     trained: [daggers,slings,stealth]
     allowedClasses: [Adventurer]
@@ -59,6 +62,7 @@ Dwarf:
     type: humanoid
     statBonus: [2,0,2,1,0,2]
     xpMod: 1.1
+    agroBase: 14
     abilities: [tinkerer,keen_eye,tough]
     trained: [axes,muskets,dwarven]
     allowedClasses: [Adventurer]
@@ -73,10 +77,11 @@ Elf:
         the other races whenever possible.
     size: 1
     speed: 2
-    vision: [8,11]
+    vision: [8,13]
     type: humanoid
     statBonus: [0,2,-1,2,1,3]
     xpMod: 1.2
+    agroBase: 14
     abilities: [archive_lore,nimble,magical_heritage,finesse]
     trained: [bows,swords,daggers,elven]
     allowedClasses: [Adventurer]
@@ -90,10 +95,11 @@ Dweller:
         to which they seem to be connected in some way...
     size: 0
     speed: 1
-    vision: [15,20]
+    vision: [12,17]
     type: dweller
     statBonus: [-2,1,-2,3,2,4]
     xpMod: 1.0
+    agroBase: 10
     abilities: [archive_lore,dweller_cunning,dweller_magic]
     trained: [magic,search,evasion,dweller]
     allowedClasses: [Archivist]
