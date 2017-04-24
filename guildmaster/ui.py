@@ -22,8 +22,8 @@ class GameScreen:
     '''
     def __init__(self, height=60, width=90, fps=30, panel_height=PANEL_HEIGHT,
                  hp_bar_width=BAR_WIDTH, alt_layout=False,
-                 font='guildmaster/fonts/terminal12x12_gs_ro.png',
-                 # font='guildmaster/fonts/hack15x15.png',
+                 # font='guildmaster/fonts/terminal12x12_gs_ro.png',
+                 font='guildmaster/fonts/hack15x15.png',
                  vim_bindings=VIM_BINDINGS):
         self.width = width
         self.height = height
