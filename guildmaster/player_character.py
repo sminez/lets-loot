@@ -28,17 +28,12 @@ def new_PC(name, PC_race='Human', PC_class='Adventurer'):
     # Generate ability scores
     ranked_scores = sorted(random_ability_scores(), reverse=True)
     ability_scores = dict(zip(PC_class['statOrder'], ranked_scores))
-    ability_scores['MAX_HP'] = (sum(PC_class['hitDice']) +
-                                (ability_scores['CON'] - 10) // 2)
-    if PC_class['castingStat'] is not None:
-        ability_scores['MAX_SP'] = (
-            roll(PC_class['spellDice']) +
-            (ability_scores[PC_class['castingStat']] - 10) // 2)
-    else:
-        ability_scores['MAX_SP'] = 0
+    ability_scores['MAX_HP'] = sum(PC_class['hitDice']) + ability_scores['VIT']
+    ability_scores['MAX_FOCUS'] = (roll(PC_class['focusDice']) +
+                                   ability_scores['INT'])
 
     # Apply racial stat modifiers
-    for stat, mod in zip(['STR', 'DEX', 'CON', 'INT', 'WIS', 'KNW'],
+    for stat, mod in zip(['STR', 'DEX', 'INT', 'VIT'],
                          PC_race['statBonus']):
         ability_scores[stat] += mod
 
@@ -57,11 +52,9 @@ def new_PC(name, PC_race='Human', PC_class='Adventurer'):
 
     # Copy over Class details
     PC.hit_dice = PC_class['hitDice']
-    PC.spell_dice = PC_class['spellDice']
-    PC.casting_stat = PC_class['castingStat']
+    PC.focus_dice = PC_class['focusDice']
     PC.trained += PC_class['trained']
     PC.abilites += PC_class['abilities']
-    PC.on_level_up = PC_class['onLevelUp']
     PC.agro_base += PC_class['agroModifier']
 
     # Fetch starting equipment and gold

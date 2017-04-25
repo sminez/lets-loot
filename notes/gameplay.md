@@ -48,3 +48,31 @@ well, boring.
 - Setting member contracts and perks
 - Planning and running adventures
 
+
+# Player stats
+STR: damage mod, carrying/burden, crit damage
+DEX: hit, evasion, crit chance
+VIT: hp, toughness/dr, regen rate
+INT: sp, spell power [arcane], xp rate
+
+# Skills
+Melee, Archery, Firearms, Arcane, Divine, Stealth, Tactics
+
+# Item stats
+The general rule (taken from Sil): (offence) [defence]
+
+> Weapons
+---------
+(hitMod, damageDice) [evMod]
+i.e.
+  Long Sword: (+1, 2d6) [+1]
+  Short Sword (0, 1d8)  [+2]
+  Dagger      (+1, 1d6) [+1]
+
+> Armour
+--------
+(hitMod) [evMod, absorb]
+i.e.
+  Leather (0)  [0, 1d4]
+  Studded (0)  [-1, 1d5]
+  Mail    (-2) [-2, 2d4]

@@ -6,7 +6,7 @@ import math
 from random import choice, randint
 from .pathfinding import PathFinder
 from ..utils import GameObject, Message, key_to_coords, roll
-from ..config import DARK0, DARK4, WHITE, FADED_BROWN
+from ..config import DARK0, DARK1, DARK4, WHITE, FADED_BROWN
 from ..config import MIN_ROOM_SIZE, MAX_ROOM_SIZE, MAX_ROOMS, LIGHT1
 
 
@@ -28,7 +28,7 @@ class Tile:
     def wall(self):
         self.name = 'wall'
         self.char = '#'
-        self.fg, self.bg = DARK4, DARK0
+        self.fg, self.bg = DARK4, DARK1
         self.block_move, self.block_sight = True, True
         self.agro_cost = 4
 
@@ -62,7 +62,7 @@ class Tile:
     def secret_door(self):
         self.name = 'secret_door'
         self.char = "#"
-        self.fg, self.bg = DARK4, DARK0
+        self.fg, self.bg = DARK4, DARK1
         self.block_move, self.block_sight = True, True
         self.agro_cost = 3
 

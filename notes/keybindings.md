@@ -3,10 +3,11 @@ Key Bindings
 
 # Movement
 arrow keys : move
-shift + arrow : move until blocked or enemy enters vision
-> : decend stairs
-< : ascend stairs
-. : stay still (enemies still move)
+numpad: move
+hjlkyubn: move
+shift + move : move until blocked or enemy enters vision
+ctrl + move: stealth move (cost two turns but agro -1)
+5 : stay still (enemies still move)
 
 # Menus
 i : inventory menu
@@ -20,11 +21,9 @@ G : gain a new spell/ability (if available)
 C : character sheet
 
 # Actions
-g : grab what's on the floor (opens a menu if things are stacked)
-R : rest
-b : bash a door or lock
-o : open something
-c : close something
+, : interact with the floor
+z : rest one turn
+Z : rest until healed
 z : cast magic (zap)
 A : activate item in main
 f : fire main

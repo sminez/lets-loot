@@ -1,18 +1,13 @@
-# Information for the creation of player characters (NOTE: max level is 50)
+# Information for the creation of player characters
 # ----------------------------------------------------------------------------
 # ClassName:
 #     description: [A short description of the class for the character creation screen]
-#     statOrder: STR,DEX,CON,INT,WIS,KNW
+#     statOrder: STR,DEX,VIT,INT
 #     hitDice: [list of dice to roll for hp]
-#     spellDice: [list of dice to roll for sp]
-#     castingStat: STR|DEX|CON|INT|WIS|KNW|null
+#     focusDice: [list of dice to roll for sp]
 #     trained: [list of skills and equipment that this class gets +2 in] (stacks with race) 
 #     abilities: [list of starting abilities]
 #     agroModifier: int
-#     onLevelUp:
-#         spellSlots: [one spell slot for each level listed]
-#         spellFocus: [+1 to spell casting checks at each level]
-#         numAttacks: [at the these levels you have a virtual +1DEX for calculating additional attacks]
 #     equipment:
 #         weapons: [random choice of 1]
 #         armour: [random choice of 1]
@@ -21,20 +16,15 @@
 # ----------------------------------------------------------------------------
 Adventurer:
     description: >
-        Adventures have heard that there is coin to be made in raiding the Archive.
+        Adventures have heard that there is coin to be made in raiding the dungeons.
         They come from all walks of life and tend to favour a direct approach to
         problem solving, preferably with a blade.
-    statOrder: [CON,STR,DEX,KNW,INT,WIS]
+    statOrder: [VIT,STR,DEX,INT]
     hitDice: [10]
-    spellDice: []
-    castingStat: null
-    trained: [swords,daggers,pistols,search]
+    focusDice: [6]
+    trained: [longSwords,daggers,pistols]
     abilities: [dodge]
     agroModifier: 0
-    onLevelUp:
-        spellSlots: []
-        spellFocus: []
-        numAttacksPlus: [10,20,40,50]
     equipment:
         weapons: [ShortSword,LongSword,HandAxe]
         armour: [Padded,LeatherCoat,StuddedLeatherCoat]
@@ -43,23 +33,17 @@ Adventurer:
 
 Archivist:
     description: >
-        Archivists have dedicated themselves to studying the Archive and its
-        contents. Their daily interaction with the archive has started to
-        affect them and they are able to anticipate the strange changing
-        nature of the Archive better than others.
-    statOrder: [KNW,INT,WIS,CON,DEX,STR]
+        Archivists spend their lives researching. They tend to be weaker than the
+        more combat focused professions but they make up for it in cunning,
+        knowledge and their ability to learn from their surroundings.
+    statOrder: [INT,DEX,VIT,STR]
     hitDice: [8]
-    spellDice: [8]
-    castingStat: KNW
-    trained: [archive_magic,disarm_trap,search]
-    abilities: [dodge]
+    focusDice: [8]
+    trained: [arcane_magic,daggers,search]
+    abilities: []
     agroModifier: -1
-    onLevelUp:
-        spellSlots: [1,1,'all']
-        spellFocus: [1,5,10,25,40,50]
-        numAttacksPlus: []
     equipment:
-        weapons: [ShortSword,LongSword,Staff]
+        weapons: [ShortSword,LongSword,Dagger]
         armour: [Padded,LeatherCoat]
-        items: [Dagger]
+        items: [NoteBook]
         gold: [10,40]

@@ -22,8 +22,9 @@ class GameScreen:
     '''
     def __init__(self, height=60, width=90, fps=30, panel_height=PANEL_HEIGHT,
                  hp_bar_width=BAR_WIDTH, alt_layout=False,
-                 # font='guildmaster/fonts/terminal12x12_gs_ro.png',
-                 font='guildmaster/fonts/hack15x15.png',
+                 font='guildmaster/fonts/terminal16x16_gs_ro.png',
+                 # font='guildmaster/fonts/typewriter14x14.png',
+                 # font='guildmaster/fonts/hack15x15.png',
                  vim_bindings=VIM_BINDINGS):
         self.width = width
         self.height = height
@@ -89,7 +90,7 @@ class GameScreen:
                |_____\___|\__| |___/ |_____\___/ \___/ \__(_)
 ''',
                 80, 30, ['New', 'Continue', 'Quit'], ['n', 'c', 'q'],
-                bg=None, ascii_art=True)
+                bg=None, ascii_art=True, show_root=False)
 
             if choice == 0:
                 # TODO: always load persistant guild state
@@ -193,20 +194,8 @@ class GameScreen:
             for obj in self.objects:
                 self.render_object(obj)
 
-            # Blit the hidden console to the screen
-            self.root.blit(self.con, 0, self.panel_height, self.width,
-                           self.map_height, 0, 0)
-
-            # Blit the panel
-            self.panel.render_bg()
-            self.panel.render_stats(self.player)
-
-            self.panel.render_messages(self.messages)
-
-            self.root.blit(self.panel.panel, 0, 0, self.width,
-                           self.panel_height, 0, 0)
-
-            tdl.flush()
+            # Display the main UI
+            self.blit_ui()
 
             # Clear the screen
             for obj in self.objects:
@@ -221,6 +210,23 @@ class GameScreen:
 
             if should_exit:
                 break
+
+    def blit_ui(self):
+        '''Blit the main ui to the root console'''
+        # Blit the hidden console to the screen
+        self.root.blit(self.con, 0, self.panel_height, self.width,
+                       self.map_height, 0, 0)
+
+        # Blit the panel
+        self.panel.render_bg()
+        self.panel.render_stats(self.player)
+
+        self.panel.render_messages(self.messages)
+
+        self.root.blit(self.panel.panel, 0, 0, self.width,
+                       self.panel_height, 0, 0)
+
+        tdl.flush()
 
     def handle_keys(self, lmap):
         '''
@@ -288,6 +294,7 @@ class GameScreen:
             if should_exit == 0:
                 # TODO: implement run saving
                 self.root.clear()
+                tdl.flush()
                 return compute_fov_agro, True, tick
 
         for message in messages:
@@ -315,12 +322,12 @@ class GameScreen:
 
         x = self.width // 2 - width // 2
         y = self.height // 2 - height // 2
-        self.root.blit(window, x, y, width, height, 0, 0)
+        self.root.blit(window, x, y, width, height, 0, 0, bg_alpha=0.75)
         tdl.flush()
         tdl.event.key_wait()
 
     def menu_selection(self, title, width, height, options, keys=None,
-                       bg=DARK0, ascii_art=False):
+                       bg=DARK0, ascii_art=False, show_root=True):
         '''Render a menu and return a selected index from options'''
         def chunked(l):
             return [l[i:i+26] for i in range(0, len(l), 26)]
@@ -361,7 +368,9 @@ class GameScreen:
 
             x = self.width // 2 - width // 2
             y = self.height // 2 - height // 2
-            self.root.blit(window, x, y, width, height, 0, 0)
+            if show_root:
+                self.blit_ui()
+            self.root.blit(window, x, y, width, height, 0, 0, bg_alpha=0.75)
             tdl.flush()
 
             # NOTE: The menu activation keystroke seems to hang around
@@ -441,7 +450,8 @@ class Panel:
         self.render_bar(
             1, 2, 'HP', player.HP, player.MAX_HP, BRIGHT_RED, FADED_RED)
         self.render_bar(
-            1, 3, 'SP', player.SP, player.MAX_SP, BRIGHT_AQUA, FADED_AQUA)
+            1, 3, 'FP', player.FOCUS, player.MAX_FOCUS,
+            BRIGHT_AQUA, FADED_AQUA)
         self.render_bar(
             1, 4, 'XP', player.current_xp, player.next_level, LIGHT4, DIM_FG1)
 

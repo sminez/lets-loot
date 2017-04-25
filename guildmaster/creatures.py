@@ -17,24 +17,22 @@ class Creature(GameObject):
     alive = True
     player_character = False
 
-    def __init__(self, STR=1, DEX=1, CON=1, INT=1, WIS=1, KNW=1,
-                 MAX_HP=1, MAX_SP=0, x=1, y=1, char='@',
+    def __init__(self, STR=1, DEX=1, INT=1, VIT=1,
+                 MAX_HP=1, MAX_FOCUS=0, x=1, y=1, char='@',
                  colour=(0, 0, 0), block_move=False):
         super().__init__(x, y, char, colour, block_move)
 
         self.MAX_HP = MAX_HP
         self.HP = MAX_HP
-        self.MAX_SP = MAX_SP
-        self.SP = MAX_SP
+        self.MAX_FOCUS = MAX_FOCUS
+        self.FOCUS = MAX_FOCUS
         self.consious = True
         self.stunned = False
 
         self.STR = STR
         self.DEX = DEX
-        self.CON = CON
         self.INT = INT
-        self.WIS = WIS
-        self.KNW = KNW
+        self.VIT = VIT
 
         self.equipment = {
             'head': None, 'chest': None,
@@ -53,7 +51,7 @@ class Creature(GameObject):
 
     @property
     def passive_perception(self):
-        base = 10 + self.modifier('WIS')
+        base = 10 + self.modifier('INT')
         # TODO: handle item effects
         return base
 
@@ -73,27 +71,17 @@ class Creature(GameObject):
         else:
             return AC + dex_mod
 
-    def skill_check(self, stat, DC, modifier=0,
-                    advantage=False, disadvantage=False):
+    def skill_check(self, stat, DC, modifier=0):
         '''
         Make a skill check against a base stat. Additional modifiers are
         applied by the caller.
         '''
-        if advantage and disadvantage:
-            # having both cancels out
-            advantage = disadvantage = False
-
         result = roll()
 
         if result == 1:
             return SkillCheckResult(success=False, crit=True)
         if result == 20:
             return SkillCheckResult(success=True, crit=True)
-
-        if advantage:
-            result = max(result, roll())
-        elif disadvantage:
-            result = min(result, roll())
 
         result = result + self.modifier(stat) + modifier
 
@@ -199,9 +187,9 @@ class Creature(GameObject):
         else:
             messages = []
 
-        if self.MAX_SP > 0 and (self.SP < self.MAX_SP):
-            sp_messages = self.recover_sp(1)
-            messages.extend(sp_messages)
+        if self.MAX_FOCUS > 0 and (self.FOCUS < self.MAX_FOCUS):
+            focus_messages = self.recover_focus(1)
+            messages.extend(focus_messages)
 
         if len(messages) == 0:
             # Already max HP and SP
@@ -224,12 +212,12 @@ class Creature(GameObject):
                       LIGHT0)
         return [msg]
 
-    def recover_sp(self, amount):
-        '''recover spell points up to MAX_SP'''
-        self.SP += amount
+    def recover_focus(self, amount):
+        '''recover focus points up to MAX_FOCUS'''
+        self.FOCUS += amount
 
-        if self.SP > self.MAX_SP:
-            self.SP = self.MAX_SP
+        if self.FOCUS > self.MAX_FOCUS:
+            self.FOCUS = self.MAX_FOCUS
 
         msg = Message('{} recovered {} spell points'.format(self.name, amount),
                       LIGHT0)
@@ -279,7 +267,7 @@ class Creature(GameObject):
         messages = []
         # TODO: add in modifiers from equipment? (maybe handle in skill check)
         #       look for traps
-        res = self.skill_check('KNW', 20)
+        res = self.skill_check('INT', 20)
         if res.success:
             for tile in map.neighbouring_tiles(self.x, self.y):
                 if tile.name == 'secret_door':
