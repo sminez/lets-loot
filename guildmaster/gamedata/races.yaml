@@ -3,7 +3,7 @@
 # RaceName:
 #     description: [A short description of the race for the character creation screen]
 #     size: 0|1|2|3 (small, medium, large, giant)
-#     speed: 1|2|3|4|5  (Number of ticks per action: implemented as tick_count%speed == 0 -> can act)
+#     speed: 1|2|3|4
 #     vision: [close, far]
 #     type: humanoid | beast | undead | daemon ...
 #     statBonus: STR,DEX,INT,VIT

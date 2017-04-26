@@ -38,7 +38,7 @@ class GameObject:
                 destination.open_door()
             return []
 
-        for obj in screen.objects:
+        for obj in screen.current_map.objects:
             if obj.x == new_x and obj.y == new_y and obj.block_move:
                 return []
 

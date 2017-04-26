@@ -1,10 +1,15 @@
 '''
 Base classes and functions for creatures, NPCs and enemies
 '''
-from random import choice
-from .config import LIGHT0, BRIGHT_RED, FADED_RED, BRIGHT_YELLOW
+import yaml
+from random import choice, randint
+from .config import LIGHT0, BRIGHT_RED, FADED_RED, BRIGHT_YELLOW, FADED_GREEN
 from .config import BRIGHT_ORANGE, BRIGHT_PURPLE, LEVEL_UP_XP_MULTIPLIER
 from .utils import roll, SkillCheckResult, GameObject, Message
+
+
+# load the enemy definitions
+enemies = yaml.load(open('guildmaster/gamedata/enemies.yaml', 'r'))
 
 
 class Creature(GameObject):
@@ -15,11 +20,13 @@ class Creature(GameObject):
     type = None
     name = None
     alive = True
+    vision = (0, 0)
+    agro_range = 0
     player_character = False
 
     def __init__(self, STR=1, DEX=1, INT=1, VIT=1,
                  MAX_HP=1, MAX_FOCUS=0, x=1, y=1, char='@',
-                 colour=(0, 0, 0), block_move=False):
+                 colour=(0, 0, 0), block_move=True):
         super().__init__(x, y, char, colour, block_move)
 
         self.MAX_HP = MAX_HP
@@ -95,15 +102,21 @@ class Creature(GameObject):
         new_x = self.x + dx
         new_y = self.y + dy
 
-        for obj in screen.objects:
-            if obj.alive and obj.x == new_x and obj.y == new_y:
-                attack_messages = self.basic_attack(obj)
-                return attack_messages
+        if self.player_character:
+            for obj in screen.current_map.objects:
+                if obj.alive and obj.x == new_x and obj.y == new_y:
+                    attack_messages = self.basic_attack(obj, screen)
+                    return attack_messages
         else:
-            interaction_messages = self.move(dx, dy, screen)
-            return interaction_messages
+            if screen.player.x == new_x and screen.player.y == new_y:
+                attack_messages = self.basic_attack(screen.player, screen)
+                return attack_messages
 
-    def basic_attack(self, target):
+        # Nothing to attack so just try to move
+        interaction_messages = self.move(dx, dy, screen)
+        return interaction_messages
+
+    def basic_attack(self, target, screen):
         '''
         Make a basic attack against a target. Modifiers and base damage
         must be set in subclasses.
@@ -132,9 +145,10 @@ class Creature(GameObject):
                 Message(msg.format(self.name, target.name, damage), LIGHT0))
             target_messages, target_died = target.lose_hp(damage)
             if target_died and self.player_character:
-                self.xp += target.XP_yield
-                if self.xp >= self.next_level:
+                self.current_xp += target.XP_yield
+                if self.current_xp >= self.next_level:
                     self.level_up()
+                screen.send_enemy_to_back(target)
 
             messages.extend(target_messages)
         return messages
@@ -182,7 +196,7 @@ class Creature(GameObject):
     def rest(self):
         '''Recover HP and SP from resting'''
         if self.HP < self.MAX_HP:
-            hp = roll(self.PC_class.hit_dice) // 2
+            hp = roll(self.hit_dice) // 2
             messages = self.heal(hp)
         else:
             messages = []
@@ -233,27 +247,20 @@ class Creature(GameObject):
     def level_up(self):
         '''Deal with level up'''
         # Reset XP bar and bump level counter
-        self.xp -= self.next_level
+        self.current_xp -= self.next_level
         self.next_level *= LEVEL_UP_XP_MULTIPLIER
+        self.next_level = int(self.next_level)
         self.level += 1
 
         # Increase HP
-        hp_up = roll(self.PC_class.hit_dice) + self.modifier('CON')
+        hp_up = roll(self.hit_dice) + self.modifier('VIT')
         self.MAX_HP += hp_up
         self.HP += hp_up
 
-        # Increase SP for casters
-        spell_stat = self.PC_class.spell_stat
-        if spell_stat is not None:
-            sp_up = roll(self.PC_class.spell_dice) + self.modifier(spell_stat)
-            self.MAX_SP += sp_up
-            self.SP += sp_up
-
-        # every third level increases a random stat by 1
-        if self.level % 3 == 0:
-            stat = choice(
-                [self.STR, self.DEX, self.CON, self.INT, self.KNW, self.CHA])
-            stat += 1
+        # Increase Focus
+        focus_up = roll(self.focus_dice) + self.modifier('INT')
+        self.MAX_FOCUS += focus_up
+        self.FOCUS += focus_up
 
         # TODO : class based perks / abilities
         #        spell slot increase etc
@@ -275,3 +282,51 @@ class Creature(GameObject):
                     messages.append(
                         Message('You found a secret door!', LIGHT0))
         return messages
+
+    def act(self, screen):
+        '''Basic AI'''
+        if not self.alive:
+            return []
+
+        floor = screen.current_map
+        messages = []
+        current_agro = floor.lmap[self.y][self.x].agro_weight
+        if current_agro <= self.agro_range:
+            dx, dy = 0, 0
+            options = floor.neighbouring_tiles(self.x, self.y,
+                                               include_offsets=True)
+            for offset, tile in options:
+                if tile.agro_weight < current_agro and not tile.block_move:
+                    dx, dy = offset
+                    # x, y = self.x + dx, self.y + dy
+                    current_agro = tile.agro_weight
+        else:
+            dx, dy = randint(-1, 1), randint(-1, 1)
+
+        messages = self.move_or_melee(dx, dy, screen)
+        return messages
+
+
+def enemy(name, x, y):
+    '''Create a new enemy'''
+    conf = enemies[name]
+    STR, DEX, INT, VIT = conf['stats']
+    enemy = Creature(
+        STR=STR, DEX=DEX, INT=INT, VIT=VIT, MAX_HP=conf['hp'],
+        MAX_FOCUS=conf['focus'], x=x, y=y, char=conf['character'],
+        colour=FADED_GREEN)
+    # XXX: this needs to convert str to var
+    # colour=conf['colour'])
+    enemy.XP_yield = conf['xp']
+    enemy.size = conf['size']
+    enemy.race = name
+    enemy.type = conf['type']
+    enemy.name = name
+    enemy.size = conf['size']
+    enemy.vision = tuple(conf['vision'])
+    enemy.agro_range = conf['agroRange']
+
+    for equipment_type, options in conf['equipment'].items():
+        enemy.equipment['equipment_type'] = choice(options)
+
+    return enemy

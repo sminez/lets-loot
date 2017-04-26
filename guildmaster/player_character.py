@@ -39,6 +39,7 @@ def new_PC(name, PC_race='Human', PC_class='Adventurer'):
 
     PC = Creature(x=0, y=0, char='@', colour=LIGHT0,
                   block_move=False, **ability_scores)
+    PC.name = name
 
     # Copy over Race details
     PC.speed = PC_race['speed']

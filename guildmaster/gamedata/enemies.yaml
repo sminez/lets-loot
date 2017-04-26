@@ -1,0 +1,34 @@
+# Information for enemies
+# ----------------------------------------------------------------------------
+# RaceName:
+#     description: [A short description of the race]
+#     character: string
+#     colour: must be one of the colours in the config file
+#     minFloor: int
+#     size: 0|1|2|3 (small, medium, large, giant)
+#     speed: 1|2|3|4
+#     vision: [close, far]
+#     agroRange: int
+#     type: humanoid | beast | undead | daemon ...
+#     stats: STR,DEX,INT,VIT
+#     hp: int
+#     focus: int
+#     xp: int
+#     equipment: []
+# ----------------------------------------------------------------------------
+Goblin:
+    description: Goblins are foul creatures.
+    character: 'g'
+    colour: FADED_GREEN
+    minFloor: 1
+    size: 0
+    speed: 2
+    vision: [7, 10]
+    agroRange: 5
+    type: goblin
+    stats: [5,4,1,6]
+    hp: 5
+    focus: 0
+    xp: 10
+    equipment:
+        main: [dagger,shortsword]

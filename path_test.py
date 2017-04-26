@@ -7,7 +7,7 @@ def conv(l):
     return [chr(97 + r.id) for r in l]
 
 
-d = Dungeon(40, 80)
+d = Dungeon(40, 80, new_alg=True)
 p = PathFinder(d.maps[0])
 rooms = d.maps[0].rooms
 

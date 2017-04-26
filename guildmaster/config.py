@@ -52,7 +52,7 @@ DIM_FG1 = (30, 30, 30)
 DIM_FG2 = (37, 37, 37)
 
 # MapGen paramaters
-MIN_ROOM_SIZE = 8
+MIN_ROOM_SIZE = 7
 MAX_ROOM_SIZE = 14
 MAX_ROOMS = 1000
 

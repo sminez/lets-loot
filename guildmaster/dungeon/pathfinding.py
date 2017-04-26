@@ -5,7 +5,7 @@ import heapq
 
 
 class PathFinder:
-    def __init__(self, map):
+    def __init__(self, map=None):
         '''A pathfinder works from a dungeon of floors'''
         self.map = map
 

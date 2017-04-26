@@ -48,15 +48,35 @@ well, boring.
 - Setting member contracts and perks
 - Planning and running adventures
 
-
+------------------------------------------------------------------------------
 # Player stats
-STR: damage mod, carrying/burden, crit damage
+STR: damage mod, crit damage
 DEX: hit, evasion, crit chance
-VIT: hp, toughness/dr, regen rate
-INT: sp, spell power [arcane], xp rate
+VIT: hp, damage reduction, regen rate
+ENL: focus, favour rate
 
-# Skills
-Melee, Archery, Firearms, Arcane, Divine, Stealth, Tactics
+### Remove races and only have classes and objects of worship
+# Classes
+Thief {2,4,3,3}
+- +1 to hit and damage with daggers and bows
+- can only wear light armour
+- hidden attack: spend favour to do double damage to enemies that have not detected you
+
+Priest {3,1,3,5}
+- improved favour rate
+- can only use crushing weapons
+- righteous smite: spend favour to do extra damage
+
+Brawler {5,2,4,1}
+- all weapon die rolls have an extra side
+- no ranged weapons
+- overkill: 10 favour for each extra point of damage on kill
+
+Mage {2,2,2,6}
+- no armour
+- starts with two spells
+- recharge: spend favour to recharge spells
+
 
 # Item stats
 The general rule (taken from Sil): (offence) [defence]

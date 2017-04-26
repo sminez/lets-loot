@@ -1,9 +1,16 @@
 '''
 Map creation algorithms
+
+http://www.gridsagegames.com/blog/2014/06/procedural-map-generation/
+http://dungeonmaker.sourceforge.net/DM2_Manual/manual1.html
+http://www.futuredatalab.com/proceduraldungeon/
+https://eskerda.com/bsp-dungeon-generation/
 '''
 import tdl
 import math
 from random import choice, randint
+
+from ..creatures import enemy
 from .pathfinding import PathFinder
 from ..utils import GameObject, Message, key_to_coords, roll
 from ..config import DARK0, DARK1, DARK4, WHITE, FADED_BROWN
@@ -84,13 +91,13 @@ class Tile:
 
 
 class Room(GameObject):
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y, width, height, ID=None):
         # NOTE: (x1,y1) == top left corner and (x2,y2) == bottom right
         self.x1 = x
         self.y1 = y
         self.x2 = x + width
         self.y2 = y + height
-        self.id = None
+        self.id = ID
 
     def __lt__(self, other):
         return self.id < other.id
@@ -127,7 +134,7 @@ class Room(GameObject):
 
 class Map:
     '''Map for a floor in the dungeon'''
-    def __init__(self, width, height, depth):
+    def __init__(self, width, height, depth, player=None, new_alg=False):
         # NOTE: these are read from config.py
         self.max_rooms = MAX_ROOMS
         self.max_room_size = MAX_ROOM_SIZE
@@ -139,32 +146,44 @@ class Map:
         self.lmap = [[Tile('wall') for x in range(width)]
                      for y in range(height)]
         self.rooms = []
+        self.enemies = []
+        self.items = []
+        self.player = player
         self.graph = {}
         self.centers = {}
         self.starting_x = 0
         self.starting_y = 0
 
-        # Add the rooms
-        for rm in range(self.max_rooms):
-            rwidth = randint(self.min_room_size, self.max_room_size)
-            rheight = randint(self.min_room_size, self.max_room_size)
-            x = randint(0, self.width - rwidth - 1)
-            y = randint(0, self.height - rheight - 1)
+        if not new_alg:
+            # Add the rooms
+            for rm in range(self.max_rooms):
+                rwidth = randint(self.min_room_size, self.max_room_size)
+                rheight = randint(self.min_room_size, self.max_room_size)
+                x = randint(0, self.width - rwidth - 1)
+                y = randint(0, self.height - rheight - 1)
 
-            new_room = Room(x, y, rwidth, rheight)
-            for room in self.rooms:
-                if new_room.overlaps_with(room):
-                    break
-            else:
-                self.add_room(new_room)
+                new_room = Room(x, y, rwidth, rheight)
+                for room in self.rooms:
+                    if new_room.overlaps_with(room):
+                        break
+                else:
+                    self.add_room(new_room)
 
-        # Connect the rooms and populate with features
-        self.generate_graph()
-        self.connect()
-        self.add_doors()
+            # Connect the rooms and populate with features
+            self.generate_graph()
+            self.connect()
+            self.add_doors()
+        else:
+            pass
+
         self.add_features()
+        self.populate()
 
-    def generate_graph(self):
+    @property
+    def objects(self):
+        return self.items + self.enemies + [self.player]
+
+    def generate_graph(self, additional_connections=True):
         '''
         Generate a randomised connected graph via an inital spanning tree
         generated using Prim's MST algorithm.
@@ -186,14 +205,14 @@ class Map:
             G[new].add(existing)
             so_far.add(new)
 
-        # Additional connections
-        for n in range(randint(5, len(rooms))):
-            n1 = choice(list(rooms))
-            existing = G[n1]
-            existing.add(n1)
-            n2 = choice(list(rooms.difference(existing)))
-            G[n1].add(n2)
-            G[n2].add(n1)
+        if additional_connections:
+            for n in range(randint(5, len(rooms))):
+                n1 = choice(list(rooms))
+                existing = G[n1]
+                existing.add(n1)
+                n2 = choice(list(rooms.difference(existing)))
+                G[n1].add(n2)
+                G[n2].add(n1)
 
         self.graph = G
 
@@ -214,22 +233,29 @@ class Map:
         '''Return all rooms connected to this one'''
         return self.graph[room]
 
-    def neighbouring_tiles(self, x, y, include_coords=False):
+    def neighbouring_tiles(self, x, y, include_coords=False,
+                           include_offsets=False):
         '''return all neighbouring tiles'''
-        coords = [(x-1, y), (x+1, y), (x, y-1), (x, y+1),
-                  (x-1, y-1), (x-1, y+1), (x+1, y-1), (x+1, y+1)]
+        if include_coords and include_offsets:
+            raise ValueError('asking for both coords and offsets')
+
+        offsets = [(-1, 0), (1, 0), (0, -1), (0, 1),
+                   (-1, -1), (-1, 1), (1, -1), (1, 1)]
 
         tiles = []
 
-        for point in coords:
-            x, y = point
-            if (0 <= x < len(self.lmap[0])) and (0 <= y < len(self.lmap)):
-                tiles.append((point, self.lmap[y][x]))
+        for offset in offsets:
+            dx, dy = offset
+            X, Y = x + dx, y + dy
+            if (0 <= X < len(self.lmap[0])) and (0 <= Y < len(self.lmap)):
+                tiles.append(((X, Y), offset, self.lmap[Y][X]))
 
         if include_coords:
-            return tiles
+            return [(t[0], t[2]) for t in tiles]
+        elif include_offsets:
+            return [(t[1], t[2]) for t in tiles]
         else:
-            return [t[1] for t in tiles]
+            return [t[2] for t in tiles]
 
     def room_cost(self, r1, r2):
         '''Weight edges based on displacement of room centres'''
@@ -351,22 +377,72 @@ class Map:
         else:
             return None
 
+    def populate(self):
+        '''Add enemies to the floor'''
+        for room in self.rooms[1:]:
+            x, y = room.random_point()
+            self.enemies.append(enemy('Goblin', x, y))
+
+    def bsp(self):
+        '''
+        Use binary space partitioning to generate a map.
+        '''
+        root = Container(self.width, self.height)
+
 
 class Dungeon:
     '''Control class for a map and its contents'''
-    def __init__(self, height=40, width=60):
+    def __init__(self, height=40, width=60, player=None, new_alg=False):
         self.height = height
         self.width = width
 
-        self.maps = []
-        self.new_floor()  # Appends a new map to self.maps
+        self.player = player
 
-        self.pathfinder = PathFinder(self.maps[0])
+        self.maps = []
+        self.pathfinder = PathFinder()
+        self.new_floor(new_alg)  # Appends a new map to self.maps
 
     def __getitem__(self, ix):
         return self.maps[ix]
 
-    def new_floor(self):
+    def new_floor(self, new_alg):
         '''Generate a new map'''
         # TODO: have some additional stuff set by the current level etc
-        self.maps.append(Map(self.width, self.height, len(self.maps)))
+        new_map = Map(self.width, self.height, len(self.maps), self.player)
+        self.maps.append(new_map)
+        self.pathfinder.map = new_map
+
+
+class Container:
+    '''Container for splitting a map using bsp'''
+    def __init__(self, width, height, ratio=0.45):
+        self.width = width
+        self.height = height
+        self.vertical_split = choice([True, False])
+        self.children = []
+
+    def split(self):
+        '''create two new containers with a minimum desired ratio'''
+        if self.vertical_split:
+            w1 = randint(0, self.width)
+            w2 = self.width - w1
+            h1 = h2 = self.height
+        else:
+            h1 = randint(0, self.height)
+            h2 = self.height - h1
+            w1 = w2 = self.width
+
+        self.children = [Container(w1, h1), Container(w2, h2)]
+
+    def split_children(self):
+        for child in self.children:
+            child.split()
+
+    def get_rooms(self):
+        if self.children == []:
+            # we're at the bottom level so make the rooms
+            # XXX: Need to ensure correct room dimensions
+            x, y = randint(1, self.width-1), randint(1, self.height-1)
+        else:
+            for child in self.children:
+                child.get_rooms()
