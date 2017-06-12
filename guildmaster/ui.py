@@ -7,7 +7,7 @@ from .utils import Message
 from .dungeon.mapgen import Dungeon
 from .player_character import new_PC
 from .config import FOV_ALG, LIGHT_WALLS
-from .config import BAR_WIDTH, PANEL_HEIGHT, VIM_BINDINGS, FADED_PURPLE
+from .config import BAR_WIDTH, PANEL_HEIGHT, VIM_BINDINGS
 from .config import BLACK, DIM_FG1, DIM_FG2, LIGHT0, LIGHT4, DARK0
 from .config import BRIGHT_RED, FADED_RED, BRIGHT_AQUA, FADED_AQUA
 
@@ -23,8 +23,7 @@ class GameScreen:
     def __init__(self, height=60, width=90, fps=30, panel_height=PANEL_HEIGHT,
                  hp_bar_width=BAR_WIDTH, alt_layout=False,
                  font='guildmaster/fonts/terminal16x16_gs_ro.png',
-                 # font='guildmaster/fonts/typewriter14x14.png',
-                 # font='guildmaster/fonts/hack15x15.png',
+                 # font='guildmaster/fonts/hack15x15.png,
                  vim_bindings=VIM_BINDINGS):
         self.width = width
         self.height = height
@@ -153,35 +152,28 @@ class GameScreen:
         for y, row in enumerate(lmap):
             for x, tile in enumerate(row):
                 # XXX: Uncomment to view the agro heatmap on floor tiles
-                tile.explored = True
+                # tile.explored = True
                 # if tile.name == 'floor':
                 #     tile.char = chr(96 + tile.agro_weight)
 
                 if (x, y) in self.visible_tiles:
                     tile.explored = True
-                    if tile.agro_weight < 6:
-                        self.con.draw_char(x, y, tile.char, fg=tile.fg, bg=FADED_PURPLE)
-                    else:
-                        self.con.draw_char(x, y, tile.char, fg=tile.fg, bg=tile.bg)
+                    self.con.draw_char(x, y, tile.char, fg=tile.fg, bg=tile.bg)
                 elif (x, y) in self.visible_tiles2:
                     self.con.draw_char(x, y, tile.char, fg=DIM_FG2, bg=BLACK)
                 elif (x, y) in self.magically_visible:
                     self.con.draw_char(x, y, tile.char, fg=tile.fg, bg=BLACK)
                 else:
                     if tile.explored:
-                        if tile.agro_weight < 6:
-                            self.con.draw_char(x, y, tile.char, fg=tile.fg, bg=FADED_PURPLE)
-                        else:
-                            self.con.draw_char(x, y, tile.char,
-                                               fg=DIM_FG1, bg=BLACK)
+                        self.con.draw_char(x, y, tile.char,
+                                           fg=DIM_FG1, bg=BLACK)
                     else:
                         self.con.draw_char(x, y, ' ', fg=None, bg=BLACK)
 
             for obj in self.current_map.objects:
-                self.render_object(obj)
-                # if ((obj.x, obj.y) in self.visible_tiles) or \
-                #         ((obj.x, obj.y) in self.magically_visible):
-                #     self.render_object(obj)
+                if ((obj.x, obj.y) in self.visible_tiles) or \
+                        ((obj.x, obj.y) in self.magically_visible):
+                    self.render_object(obj)
 
     def run(self):
         '''

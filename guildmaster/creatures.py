@@ -51,32 +51,26 @@ class Creature(GameObject):
         }
         self.pack = []
 
-    def modifier(self, stat):
-        '''Compute the modifier for a stat'''
-        # TODO: check for item and status effects
-        return (getattr(self, stat) - 10) // 2
-
-    @property
-    def passive_perception(self):
-        base = 10 + self.modifier('INT')
-        # TODO: handle item effects
-        return base
-
     @property
     def AC(self):
+        '''AC reduces damage on hit'''
         AC = 0
-        dex_mod = self.modifier('DEX')
-
         for item in self.equipment.values():
             if hasattr(item, 'AC_base'):
                 AC += item.AC_base
+        return AC
+
+    @property
+    def EV(self):
+        '''Evaison gives a change to avoid attacks'''
+        EV = 0
+        dex_mod = self.DEX
+        for item in self.equipment.values():
+            if hasattr(item, 'dex_mod'):
                 item_dex_mod = item.dex_mod(self)
                 dex_mod = min(dex_mod, item_dex_mod)
 
-        if AC == 0:
-            return 10 + dex_mod
-        else:
-            return AC + dex_mod
+        return EV + dex_mod
 
     def skill_check(self, stat, DC, modifier=0):
         '''
@@ -90,7 +84,7 @@ class Creature(GameObject):
         if result == 20:
             return SkillCheckResult(success=True, crit=True)
 
-        result = result + self.modifier(stat) + modifier
+        result = result + getattr(self, stat) + modifier
 
         if result >= DC:
             return SkillCheckResult(success=True, crit=False)
@@ -253,12 +247,12 @@ class Creature(GameObject):
         self.level += 1
 
         # Increase HP
-        hp_up = roll(self.hit_dice) + self.modifier('VIT')
+        hp_up = roll(self.hit_dice) + getattr(self, 'VIT')
         self.MAX_HP += hp_up
         self.HP += hp_up
 
         # Increase Focus
-        focus_up = roll(self.focus_dice) + self.modifier('INT')
+        focus_up = roll(self.focus_dice) + getattr(self, 'INT')
         self.MAX_FOCUS += focus_up
         self.FOCUS += focus_up
 

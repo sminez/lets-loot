@@ -2,7 +2,7 @@
 # ----------------------------------------------------------------------------
 # ClassName:
 #     description: [A short description of the class for the character creation screen]
-#     statOrder: STR,DEX,VIT,INT
+#     stats: [STR,DEX,VIT,INT]
 #     hitDice: [list of dice to roll for hp]
 #     focusDice: [list of dice to roll for sp]
 #     trained: [list of skills and equipment that this class gets +2 in] (stacks with race) 
@@ -14,12 +14,10 @@
 #         items: [all]
 #         gold: [least,most]
 # ----------------------------------------------------------------------------
-Adventurer:
+Thief:
     description: >
-        Adventures have heard that there is coin to be made in raiding the dungeons.
-        They come from all walks of life and tend to favour a direct approach to
-        problem solving, preferably with a blade.
-    statOrder: [VIT,STR,DEX,INT]
+        A thief
+    stats: [2,4,3,3]
     hitDice: [10]
     focusDice: [6]
     trained: [longSwords,daggers,pistols]
@@ -31,19 +29,18 @@ Adventurer:
         items: [Dagger]
         gold: [10,40]
 
-Archivist:
+
+Priest:
     description: >
-        Archivists spend their lives researching. They tend to be weaker than the
-        more combat focused professions but they make up for it in cunning,
-        knowledge and their ability to learn from their surroundings.
-    statOrder: [INT,DEX,VIT,STR]
-    hitDice: [8]
-    focusDice: [8]
-    trained: [arcane_magic,daggers,search]
-    abilities: []
-    agroModifier: -1
+        A priest
+    stats: [3,1,3,5]
+    hitDice: [10]
+    focusDice: [6]
+    trained: [longSwords,daggers,pistols]
+    abilities: [dodge]
+    agroModifier: 0
     equipment:
-        weapons: [ShortSword,LongSword,Dagger]
-        armour: [Padded,LeatherCoat]
-        items: [NoteBook]
+        weapons: [ShortSword,LongSword,HandAxe]
+        armour: [Padded,LeatherCoat,StuddedLeatherCoat]
+        items: [Dagger]
         gold: [10,40]

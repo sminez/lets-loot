@@ -10,10 +10,10 @@ from .creatures import Creature
 
 def random_ability_scores():
     '''Generate a randomised set of ability scores'''
-    return [stat_roll() for _ in range(6)]
+    return [stat_roll() for _ in range(4)]
 
 
-def new_PC(name, PC_race='Human', PC_class='Adventurer'):
+def new_PC(name, PC_race='Human', PC_class='Thief'):
     '''
     Build a new player character from config files
     '''
@@ -26,16 +26,14 @@ def new_PC(name, PC_race='Human', PC_class='Adventurer'):
     PC_class = classes[PC_class]
 
     # Generate ability scores
-    ranked_scores = sorted(random_ability_scores(), reverse=True)
-    ability_scores = dict(zip(PC_class['statOrder'], ranked_scores))
+    ability_scores = {}
+    for stat, mod in zip(['STR', 'DEX', 'VIT', 'INT'],
+                         PC_class['stats']):
+        ability_scores[stat] = mod
+
     ability_scores['MAX_HP'] = sum(PC_class['hitDice']) + ability_scores['VIT']
     ability_scores['MAX_FOCUS'] = (roll(PC_class['focusDice']) +
                                    ability_scores['INT'])
-
-    # Apply racial stat modifiers
-    for stat, mod in zip(['STR', 'DEX', 'INT', 'VIT'],
-                         PC_race['statBonus']):
-        ability_scores[stat] += mod
 
     PC = Creature(x=0, y=0, char='@', colour=LIGHT0,
                   block_move=False, **ability_scores)
