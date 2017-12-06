@@ -287,15 +287,22 @@ class Creature(GameObject):
         current_agro = floor.lmap[self.y][self.x].agro_weight
         if current_agro <= self.agro_range:
             dx, dy = 0, 0
-            options = floor.neighbouring_tiles(self.x, self.y,
-                                               include_offsets=True)
-            for offset, tile in options:
-                if tile.agro_weight < current_agro and not tile.block_move:
-                    dx, dy = offset
-                    # x, y = self.x + dx, self.y + dy
-                    current_agro = tile.agro_weight
+
+            if randint(1, 100) <= 90:
+                # 90% chance of following the player
+                options = floor.neighbouring_tiles(self.x, self.y,
+                                                   include_offsets=True)
+                for offset, tile in options:
+                    if tile.agro_weight < current_agro and not tile.block_move:
+                        dx, dy = offset
+                        # x, y = self.x + dx, self.y + dy
+                        current_agro = tile.agro_weight
         else:
-            dx, dy = randint(-1, 1), randint(-1, 1)
+            # Either take a random step or stay put
+            if randint(0, 1) == 1:
+                dx, dy = randint(-1, 1), randint(-1, 1)
+            else:
+                dx, dy = 0, 0
 
         messages = self.move_or_melee(dx, dy, screen)
         return messages
