@@ -134,7 +134,7 @@ class Room(GameObject):
 
 class Map:
     '''Map for a floor in the dungeon'''
-    def __init__(self, width, height, depth, player=None, new_alg=False):
+    def __init__(self, width, height, depth, player=None):
         # NOTE: these are read from config.py
         self.max_rooms = MAX_ROOMS
         self.max_room_size = MAX_ROOM_SIZE
@@ -154,28 +154,24 @@ class Map:
         self.starting_x = 0
         self.starting_y = 0
 
-        if not new_alg:
-            # Add the rooms
-            for rm in range(self.max_rooms):
-                rwidth = randint(self.min_room_size, self.max_room_size)
-                rheight = randint(self.min_room_size, self.max_room_size)
-                x = randint(0, self.width - rwidth - 1)
-                y = randint(0, self.height - rheight - 1)
+        # Add the rooms
+        for rm in range(self.max_rooms):
+            rwidth = randint(self.min_room_size, self.max_room_size)
+            rheight = randint(self.min_room_size, self.max_room_size)
+            x = randint(0, self.width - rwidth - 1)
+            y = randint(0, self.height - rheight - 1)
 
-                new_room = Room(x, y, rwidth, rheight)
-                for room in self.rooms:
-                    if new_room.overlaps_with(room):
-                        break
-                else:
-                    self.add_room(new_room)
+            new_room = Room(x, y, rwidth, rheight)
+            for room in self.rooms:
+                if new_room.overlaps_with(room):
+                    break
+            else:
+                self.add_room(new_room)
 
-            # Connect the rooms and populate with features
-            self.generate_graph()
-            self.connect()
-            self.add_doors()
-        else:
-            pass
-
+        # Connect the rooms and populate with features
+        self.generate_graph()
+        self.connect()
+        self.add_doors()
         self.add_features()
         self.populate()
 
@@ -345,7 +341,9 @@ class Map:
                     cell.closed_door(allow_secret_door=True)
 
     def add_features(self):
-        pass
+        exit_room = choice(self.rooms)
+        x, y = exit_room.random_point()
+        self.lmap[y][x] = Tile('down', exit_room.id)
 
     def close_door(self, screen, x, y):
         '''Allow the player to close a door'''

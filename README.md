@@ -26,3 +26,11 @@ Articles to look at
 -------------------
 http://roguelikedeveloper.blogspot.co.uk/2007/11/unangband-dungeon-generation-part-one.html
 http://www.roguebasin.com/index.php?title=Basic_BSP_Dungeon_generation
+
+
+
+### Installing
+```bash
+sudo apt-get install gcc python-dev python3-dev libsdl2-dev libffi-dev libomp5
+python3 -m pip install tcod
+```
