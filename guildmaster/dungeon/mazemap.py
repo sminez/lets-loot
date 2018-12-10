@@ -40,3 +40,8 @@ class Maze:
                 if Y == y:
                     self.ver[y][max(x, X)] = "   "
                 self.walk(X, Y)
+
+
+if __name__ == '__main__':
+    m = Maze(20, 20)
+    print(m.generate())
